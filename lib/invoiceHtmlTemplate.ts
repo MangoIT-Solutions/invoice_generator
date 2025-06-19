@@ -69,7 +69,7 @@ export function generateInvoiceHtml(
         <div style="font-size: 0.97em;">a web & mobile dev company</div>
         <div style="font-size: 0.96em;">${company.address}</div>
         <div style="font-size: 0.96em;">${company.contact} / ${company.email}</div>
-        <div style="font-size: 0.96em;">GSTIN-23ADUPS9604H1Z1</div>
+        <div style="font-size: 0.96em;">GSTIN-23XXXXXPS9604H1Z1</div>
       </td>
     </tr>
     <tr>
@@ -87,7 +87,7 @@ export function generateInvoiceHtml(
         <table class="details-table">
           <tr><td>Date:</td><td>${invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-') : ''}</td></tr>
           <tr><td>Invoice No.:</td><td>${invoice.invoice_number}</td></tr>
-          <tr><td>Period:</td><td>${invoice.period ? formatPeriod(invoice.period) : 'N/A'}</td></tr>
+          <tr><td>Period:</td><td>${invoice.period ? invoice.period : 'N/A'}</td></tr>
           <tr><td>Term:</td><td>${invoice.term || 'On receipt'}</td></tr>
           <tr><td>Project code:</td><td>${invoice.project_code || 'N/A'}</td></tr>
         </table>
@@ -139,7 +139,7 @@ export function generateInvoiceHtml(
       <td colspan="3">We appreciate your business, thank you <span style="color:#b96b00;">&#10003;</span></td>
     </tr>
     <tr>
-      <td colspan="3" class="ka-cell">KA: ${company.admin_name || 'Rahul Gangle'}<br />${company.admin_department || 'Billing Department'}, ${company.name || 'Mango IT Solutions'}</td>
+      <td colspan="3" class="ka-cell">KA: ${company.admin_name || 'MangoIT Accounts'}<br />${company.admin_department || 'Billing Department'}, ${company.name || 'Mango IT Solutions'}</td>
     </tr>
     <tr>
       <td colspan="3" class="payment-instructions">Please wire as per bank details below & send SWIFT / bank advisory to ${company.email || 'accounts@mangoitsolutions.com'}</td>

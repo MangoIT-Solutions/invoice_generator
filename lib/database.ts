@@ -31,6 +31,7 @@ export interface Company {
   contact: string;
   admin_name: string;
   admin_department: string;
+  hsn_sac?: string;
 }
 
 export interface InvoiceConfig {

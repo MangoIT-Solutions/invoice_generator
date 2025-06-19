@@ -122,258 +122,295 @@ export default function InvoiceView() {
   const { invoice, items, company, bank } = invoiceData;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Button variant="ghost" onClick={() => router.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={generatePDF}>
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
+    <>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <Button variant="ghost" onClick={() => router.back()}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
               </Button>
-              <Button onClick={() => setDialogOpen(true)}>
-                <Mail className="mr-2 h-4 w-4" />
-                Send Email
-              </Button>
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={generatePDF}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Email
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Invoice */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
-          <CardContent className="p-0">
-            <div
-              ref={invoiceRef}
-              className="bg-white  border-2 border-gray-900 rounded-md"
-              style={{ boxSizing: 'border-box' }}
-            >
-              {/* Header */}
-              <div className="border-b-2 border-gray-900 pb-6 mb-6 p-2">
-                <div className="flex justify-between items-start">
-                  {/* Logo on the left */}
-                  <div className="flex-shrink-0 flex flex-col items-start justify-start w-1/3">
-                    {company?.company_logo && (
-                      <img
-                        src={company.company_logo.startsWith('uploads/') || company.company_logo.startsWith('/uploads/') ? `/` + company.company_logo.replace(/^\/+/, '') : `/uploads/${company.company_logo.replace(/^\/+/, '')}`}
-                        alt="Company Logo"
-                        className="mb-2 max-h-16 max-w-xs object-contain"
-                        style={{ background: '#fff', borderRadius: 4, border: '1px solid #eee', padding: 4 }}
-                      />
-                    )}
-                  </div>
-                  {/* Company Info on the right, but left-aligned content */}
-                  <div className="flex-1 ml-6 text-left ">
-                    <div className='main-title' >
-                      <h1 className="text-2xl font-bold text-gray-900 mt-2">{company?.name || 'MANGO IT SOLUTIONS'}</h1>
-                      <p className="text-sm text-gray-600">a web & mobile dev company</p>
+        {/* Invoice */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card>
+            <CardContent className="p-0">
+              <div
+                ref={invoiceRef}
+                className="bg-white border-2 border-gray-900 rounded-md"
+                style={{ boxSizing: 'border-box' }}
+              >
+                <div className="px-6 py-4">
+                  {/* Company Info Row */}
+                  <div className="flex justify-between items-start">
+                    {/* Logo - Left Aligned */}
+                    <div className="w-48">
+                      {company?.company_logo && (
+                        <img
+                          src={company.company_logo.startsWith('uploads/') || company.company_logo.startsWith('/uploads/') ? `/` + company.company_logo.replace(/^\/+/, '') : `/uploads/${company.company_logo.replace(/^\/+/, '')}`}
+                          alt="Company Logo"
+                          className="h-16 object-contain bg-white border border-gray-200 p-1"
+                        />
+                      )}
                     </div>
-                    <div className="mt-2 text-xs text-gray-600">
-                      <p>{company?.address || '15/3 Old Palasia, Behind Sarda House, Indore 452 001 INDIA'}</p>
-                      <p>{company?.contact || '+91-731-4044117'} / {company?.email || 'accounts@mangoitsolutions.com'}</p>
-                      <p>GSTIN-23ADUPS9604H1Z1</p>
+
+                    {/* Company Details - Right Aligned */}
+                    <div className="text-right">
+                      <h1 className="text-xl font-bold">{company?.name || 'Mango IT Solutions'}</h1>
+                      <p className="text-sm text-gray-600 -mt-1">a web & mobile dev company</p>
+                      <div className="text-xs mt-1 space-y-0.5">
+                        <p>{company?.address || '15/3 Old Palasia, Behind Sarda House, Indore 452 001 INDIA'}</p>
+                        <p>{company?.contact || '+91-731-4044117'} / {company?.email || 'accounts@mangoitsolutions.com'}</p>
+                        <p>GSTIN-23XXXXXPS9604H1Z1 {company?.hsn_sac && `• HSN / SAC: ${company.hsn_sac}`}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-                {/* Invoice Title Centered Below */}
-                <div className="flex justify-center mt-4">
-                  <h2 className="text-lg font-semibold text-center">Software Service Invoice</h2>
-                </div>
-              </div>
 
-              {/* Invoice Details - split left/right */}
-              <div className="mb-6 flex flex-row gap-8 p-2">
-                {/* Left: Bill To (client info) */}
-                <div className="flex-1 text-left">
-                  <h3 className="font-small mb-2">Bill To</h3>
-                  <div className="text-sm mb-2">
-                    <p className="font-medium">{invoice.client_company_name || invoice.client_name}</p>
-                    <p>{invoice.client_address?.replace(/\n|\r/g, ', ')}</p>
-                  </div>
-                  <div className="text-sm mb-2">
-                    <p className="flex-1 mb-2 font-small">KA: <strong>{invoice.client_name} </strong> | Email: {invoice.client_email}</p>
+                  {/* Invoice Title */}
+                  <div className="mt-4 -mx-6 px-6 border-t-2 border-b-2 border-black text-center">
+                    <h2 className="text-lg font-bold py-1">Software Service Invoice</h2>
                   </div>
                 </div>
-                {/* Right: Invoice Info */}
-                <div className="flex-1 text-left">
-                  <div className="text-sm space-y-1">
-                    <div>Date: {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-') : ''}</div>
-                    <div>Invoice No.: {invoice.invoice_number}</div>
-                    <div>Period: {invoice.period ? formatPeriod(invoice.period) : 'N/A'}</div>
-                    <div>Term: {invoice.term || 'On receipt'}</div>
-                    <div>Project code: {invoice.project_code || 'N/A'}</div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Items Table */}
-              <div className="mb-6">
-                <table className="w-full border border-l-0 border-r-0 border-gray-900">
-                  <thead>
-                    <tr className="">
-                      <th className="border border-r-0 border-l-0 border-gray-900 px-4 py-2 text-left align-bottom" rowSpan={2}>Description</th>
-                      <th className="border border-gray-900 px-4 py-2 text-center" colSpan={2}>Rate</th>
-                      <th className="border border-gray-900 border-r-0 px-4 py-2 text-right align-bottom" rowSpan={2}>Amount USD</th>
-                    </tr>
-                    <tr className="">
-                      <th className="border border-gray-900 px-4 py-2 text-center">Base</th>
-                      <th className="border border-gray-900 px-4 py-2 text-center">Unit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="border border-gray-900 border-l-0 px-4 py-2">{item.description}</td>
-                        <td className="border border-gray-900 px-4 py-2 text-center">{item.base_rate}</td>
-                        <td className="border border-gray-900 px-4 py-2 text-center">{item.unit}</td>
-                        <td className="border border-gray-900 border-r-0 px-4 py-2 text-right">{typeof item.amount === 'number' ? item.amount.toFixed(2) : Number(item.amount || 0).toFixed(2)}</td>
+                {/* Invoice Details - split left/right */}
+                <div className="flex flex-row -mx-6 px-6 py-2 m-2 p-2 ">
+                  {/* Left: Bill To (client info) */}
+                  <div className="w-1/2 pr-4 p-2 border-r-2 border-black">
+                    <h3 className="text-sm font-bold mb-1">Bill To</h3>
+                    <div className="text-xs mb-1">
+                      <p className="font-bold">{invoice.client_company_name || invoice.client_name}</p>
+                      <p>{invoice.client_address?.replace(/\n|\r/g, ', ')}</p>
+                    </div>
+                    <div className="text-xs">
+                      <p>KA: <span className="font-bold">{invoice.client_name}</span> | Email: {invoice.client_email}</p>
+                    </div>
+                  </div>
+
+                  {/* Right: Invoice Info */}
+                  <div className="w-1/2 pl-4">
+                    <table className="w-full text-xs">
+                      <tbody>
+                        <tr>
+                          <td className="w-24 py-0.5">Date:</td>
+                          <td className="py-0.5">{invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-') : ''}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-0.5">Invoice No.:</td>
+                          <td className="py-0.5">{invoice.invoice_number}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-0.5">Period:</td>
+                          <td className="py-0.5">{invoice.period ? formatPeriod(invoice.period) : 'N/A'}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-0.5">Term:</td>
+                          <td className="py-0.5">{invoice.term || 'On receipt'}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-0.5">Project code:</td>
+                          <td className="py-0.5">{invoice.project_code || 'N/A'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Items Table */}
+                <div className="-mx-6 px-6">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b-2 border-t-2 border-black">
+                        <th className="px-3 py-1 text-left text-sm font-normal" rowSpan={2}>Description</th>
+                        <th className="px-3 py-1 text-center text-sm font-normal border-l border-black" colSpan={2}>Rate</th>
+                        <th className="px-3 py-1 text-right text-sm font-normal border-l border-black" rowSpan={2}>Amount (USD)</th>
                       </tr>
-                    ))}
-                    {invoice.payment_charges > 0 && (
-                      <tr>
-                        <td className="border border-gray-900 border-l-0 px-4 py-2">Payment Transfer Charges</td>
-                        <td className="border border-gray-900 px-4 py-2 text-center">35</td>
-                        <td className="border border-gray-900 px-4 py-2 text-center">1.00</td>
-                        <td className="border border-gray-900 border-r-0 px-4 py-2 text-right">{invoice.payment_charges}</td>
+                      <tr className="border-b-2 border-black">
+                        <th className="px-3 py-1 text-center text-sm font-normal border-l border-black">Base</th>
+                        <th className="px-3 py-1 text-center text-sm font-normal border-l border-r border-black">Unit</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {items.map((item, index) => (
+                        <tr key={index} className="border-b border-black">
+                          <td className="px-3 py-2 align-top">
+                            <div className="text-sm">{item.description}</div>
+                            {item.details && (
+                              <div className="text-xs text-gray-500 mt-1 whitespace-pre-line">{item.details}</div>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right align-top text-sm border-l border-black">
+                            {typeof item.base_rate === 'number' ? item.base_rate.toFixed(2) : Number(item.base_rate ?? 0).toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2 text-right align-top text-sm border-l border-r border-black">
+                            {typeof item.unit === 'number' ? item.unit : Number(item.unit ?? 0)}
+                          </td>
+                          <td className="px-3 py-2 text-right align-top text-sm border-l border-black">
+                            {typeof item.amount === 'number' ? item.amount.toFixed(2) : Number(item.amount ?? 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                      {invoice.payment_charges > 0 && (
+                        <tr className="border-b border-black">
+                          <td className="px-3 py-2 text-sm">Payment Transfer Charges</td>
+                          <td className="px-3 py-2 text-right text-sm border-l border-black">35.00</td>
+                          <td className="px-3 py-2 text-right text-sm border-l border-r border-black">1</td>
+                          <td className="px-3 py-2 text-right text-sm border-l border-black">
+                            {typeof invoice.payment_charges === 'number' ? invoice.payment_charges.toFixed(2) : Number(invoice.payment_charges ?? 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Total */}
-              HSN / SAC: 998314
-              SUPPLY MEANT FOR EXPORT UNDER LUT WITHOUT PAYMENT OF INTEGRATED TAX
-              <div className="text-right mb-6 p-2">
-                <div className="inline-block">
-                  <div className="flex justify-between items-center min-w-48">
-                    <span className="font-semibold">Net Balance Due</span>
-                    <span className="font-bold text-lg ml-8">${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : Number(invoice.total || 0).toFixed(2)}</span>
+                {/* HSN/SAC and Export Note */}
+                <div className="px-6 py-2 text-xs border-b border-black">
+                  <div className="flex justify-between">
+                    <div>HSN / SAC: {company?.hsn_sac || '998314'}</div>
+                    <div className="text-right">SUPPLY/MENT FOR EXPORT UNDER LUT WITHOUT PAYMENT OF INTEGRATED TAX</div>
                   </div>
                 </div>
-              </div>
 
-              {/* Footer */}
-              <div className="border-t border-gray-900 pt-4">
-                <p className="text-sm mb-4">We appreciate your business, thank you</p>
-                <div className="text-sm mb-2">
-                  <p className="font-medium">KA: {company?.admin_name || 'Rahul Gangle'}</p>
-                  <p>{company?.admin_department || 'Billing Department'}, {company?.name || 'Mango IT Solutions'}</p>
+                {/* Net Balance */}
+                <div className="px-6 py-2 text-right font-bold text-sm border-b-2 border-black">
+                  Net Balance Due: ${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : Number(invoice.total || 0).toFixed(2)}
                 </div>
-              </div>
-              <div className="border-t border-gray-900 pt-4">
-                <div className="mt-4 text-sm">
-                  <p>Please wire as per bank details below & send SWIFT / bank advisory to {company?.email || 'accounts@mangoitsolutions.com'}</p>
-                  <table className="mt-2">
+
+                {/* Thank You Note */}
+                <div className="px-6 py-2 text-center text-orange-700 text-sm border-b-2 border-black">
+                  We appreciate your business, thank you ✓
+                </div>
+
+                {/* KA and Department */}
+                <div className="px-6 py-1 text-xs">
+                  KA: {company?.admin_name || 'Rahul Gangle'}<br />
+                  {company?.admin_department || 'Billing Department'}, {company?.name || 'Mango IT Solutions'}
+                </div>
+
+                {/* Bank Details */}
+                <div className="px-6 py-1 text-xs border-t border-b border-black">
+                  Please wire as per bank details below & send SWIFT / bank advisory to {company?.email || 'accounts@mangoitsolutions.com'}
+                </div>
+
+                <div className=" px-6 py-2">
+                  <table className="w-full text-xs">
                     <tbody>
                       <tr>
-                        <td><strong>For credit to:</strong></td>
+                        <td className="w-24 font-medium">For credit to:</td>
                         <td>{company?.name || 'Mango IT Solutions'}</td>
                       </tr>
                       <tr>
-                        <td><strong>Address:</strong></td>
+                        <td className="font-medium">Address:</td>
                         <td>{company?.address || '15/3, Old Palasia'}</td>
                       </tr>
                       <tr>
-                        <td><strong>Account number:</strong></td>
+                        <td className="font-medium">Account number:</td>
                         <td>{bank?.account_number || 'XXXXXXXXXXXXXX'}</td>
                       </tr>
                       <tr>
-                        <td><strong>Account with:</strong></td>
+                        <td className="font-medium">Account with:</td>
                         <td>{bank?.bank_name || 'XXXX Bank'}, India</td>
                       </tr>
                       <tr>
-                        <td><strong>Bank/Branch address:</strong></td>
+                        <td className="font-medium">Bank/Branch address:</td>
                         <td>{bank?.bank_address || 'Bank Address'}</td>
                       </tr>
                       <tr>
-                        <td><strong>SWIFT:</strong></td>
-                        <td>{bank?.swift_code || 'XXXXXXXX'}</td>
+                        <td className="font-medium">SWIFT:</td>
+                        <td>{bank?.swift_code || 'SWIFT Code'}</td>
                       </tr>
                       <tr>
-                        <td><strong>IFSC CODE:</strong></td>
-                        <td>{bank?.ifsc_code || 'XXXXXXXXX'}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Bank Wire Charges:</strong></td>
-                        <td>On client side</td>
+                        <td className="font-medium">IFSC:</td>
+                        <td>{bank?.ifsc_code || 'IFSC Code'}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <div className="mt-6 text-xs border-gray-900 border-t p-2">
-                  <p>Late payments charges, if paid later than 7days per terms, @ 1.5% monthly interest or USD 35, whichever is greater</p>
+
+                {/* Footer Note */}
+                <div className="px-6 py-2 text-xs text-center border-t border-b border-black">
+                  Please note a late payment charge @ 2% per month will be levied on all invoices not paid within 7 days of due date.
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Email Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Send Invoice Email</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="email-to">To</label>
+                <Input
+                  id="email-to"
+                  value={emailForm.to}
+                  onChange={e => setEmailForm(f => ({ ...f, to: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="email-subject">Subject</label>
+                <Input
+                  id="email-subject"
+                  value={emailForm.subject}
+                  onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="email-message">Message</label>
+                <textarea
+                  id="email-message"
+                  className="w-full border rounded p-2"
+                  rows={4}
+                  value={emailForm.message}
+                  onChange={e => setEmailForm(f => ({ ...f, message: e.target.value }))}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={sendEmail}>Send Email</Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Email Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send Invoice Email</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="email-to">To</label>
-              <Input
-                id="email-to"
-                value={emailForm.to}
-                onChange={e => setEmailForm(f => ({ ...f, to: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="email-subject">Subject</label>
-              <Input
-                id="email-subject"
-                value={emailForm.subject}
-                onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="email-message">Message</label>
-              <textarea
-                id="email-message"
-                className="w-full border rounded p-2"
-                rows={4}
-                value={emailForm.message}
-                onChange={e => setEmailForm(f => ({ ...f, message: e.target.value }))}
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={sendEmail}>Send Email</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </>
   );
+}
 
-  function formatPeriod(period: string) {
-    // Expecting format: 'YYYY-MM-DD - YYYY-MM-DD' or 'MM/DD/YYYY - MM/DD/YYYY' or similar
-    const [from, to] = period.split(/\s*-\s*/);
-    if (!from || !to) return period;
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) return period;
-    return `${ordinalDay(fromDate.getDate())} ${fromDate.toLocaleString('en-US', { month: 'short' })} ${fromDate.getFullYear().toString().slice(-2)} to ${ordinalDay(toDate.getDate())} ${toDate.toLocaleString('en-US', { month: 'short' })} ${toDate.getFullYear().toString().slice(-2)}`;
-  }
-  function ordinalDay(day: number) {
-    if (day > 3 && day < 21) return day + 'th';
-    switch (day % 10) {
-      case 1: return day + 'st';
-      case 2: return day + 'nd';
-      case 3: return day + 'rd';
-      default: return day + 'th';
-    }
+function formatPeriod(period: string) {
+  // Expecting format: 'YYYY-MM-DD - YYYY-MM-DD' or 'MM/DD/YYYY - MM/DD/YYYY' or similar
+  const [from, to] = period.split(/\s*-\s*/);
+  if (!from || !to) return period;
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) return period;
+  return `${ordinalDay(fromDate.getDate())} ${fromDate.toLocaleString('en-US', { month: 'short' })} ${fromDate.getFullYear().toString().slice(-2)} to ${ordinalDay(toDate.getDate())} ${toDate.toLocaleString('en-US', { month: 'short' })} ${toDate.getFullYear().toString().slice(-2)}`;
+}
+
+function ordinalDay(day: number) {
+  if (day > 3 && day < 21) return day + 'th';
+  switch (day % 10) {
+    case 1: return day + 'st';
+    case 2: return day + 'nd';
+    case 3: return day + 'rd';
+    default: return day + 'th';
   }
 }

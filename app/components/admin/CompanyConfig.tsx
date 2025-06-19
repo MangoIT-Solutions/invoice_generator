@@ -19,6 +19,7 @@ export default function CompanyConfig() {
     admin_name: string;
     admin_department: string;
     company_logo: string | File;
+    hsn_sac?: string;
   }>({
     name: '',
     address: '',
@@ -26,7 +27,8 @@ export default function CompanyConfig() {
     contact: '',
     admin_name: '',
     admin_department: '',
-    company_logo: ''
+    company_logo: '',
+    hsn_sac: ''
   });
 
   useEffect(() => {
@@ -191,6 +193,16 @@ export default function CompanyConfig() {
                   onChange={handleChange}
                   placeholder="Enter admin department"
                   required
+                />
+              </div>
+              <div>
+                <Label htmlFor="hsn_sac">HSN / SAC Code</Label>
+                <Input
+                  id="hsn_sac"
+                  name="hsn_sac"
+                  value={formData.hsn_sac || ''}
+                  onChange={handleChange}
+                  placeholder="Enter HSN or SAC code"
                 />
               </div>
             </div>

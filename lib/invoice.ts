@@ -160,13 +160,13 @@ export async function updateCompanyConfig(data: any) {
 
     if (existing) {
       await client.execute({
-        sql: `UPDATE company SET name = ?, address = ?, email = ?, contact = ?, admin_name = ?, admin_department = ?, company_logo = ? WHERE id = ?`,
-        args: [data.name, data.address, data.email, data.contact, data.admin_name, data.admin_department, data.company_logo, existing.id]
+        sql: `UPDATE company SET name = ?, address = ?, email = ?, contact = ?, admin_name = ?, admin_department = ?, company_logo = ?, hsn_sac = ? WHERE id = ?`,
+        args: [data.name, data.address, data.email, data.contact, data.admin_name, data.admin_department, data.company_logo, data.hsn_sac, existing.id]
       });
     } else {
       await client.execute({
-        sql: `INSERT INTO company (name, address, email, contact, admin_name, admin_department, company_logo) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        args: [data.name, data.address, data.email, data.contact, data.admin_name, data.admin_department, data.company_logo]
+        sql: `INSERT INTO company (name, address, email, contact, admin_name, admin_department, company_logo, hsn_sac) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [data.name, data.address, data.email, data.contact, data.admin_name, data.admin_department, data.company_logo, data.hsn_sac]
       });
     }
   } catch (error) {

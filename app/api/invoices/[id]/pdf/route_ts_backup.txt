@@ -75,7 +75,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         doc.text(companyAddress, 525, 70, { maxWidth: 300, align: 'right' });
         doc.text(plainCompany?.contact || '', 400, 80, { maxWidth: 300, align: 'right' });
         doc.text(plainCompany?.email || '', 400, 90, { maxWidth: 300, align: 'right' });
-        doc.text('GSTIN-23ADUPS9604H1Z1', 535, 90, { maxWidth: 300, align: 'right' });
+        doc.text('GSTIN-23XXXXXPS9604H1Z1', 535, 90, { maxWidth: 300, align: 'right' });
 
         doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
