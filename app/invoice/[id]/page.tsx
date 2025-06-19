@@ -54,37 +54,24 @@ export default function InvoiceView() {
   };
 
   const generatePDF = async () => {
-    if (!invoiceRef.current) return;
-
     try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      const response = await fetch(`/api/invoices/${params.id}/pdf`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF');
       }
-
-      pdf.save(`invoice-${invoiceData?.invoice.invoice_number}.pdf`);
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoiceData?.invoice.invoice_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
     } catch (error) {
-      toast.error('Failed to generate PDF');
+      console.error('Error downloading PDF:', error);
+      toast.error('Failed to download PDF');
     }
   };
 
