@@ -166,7 +166,7 @@ export function generateInvoiceHtml(
       <td class="export-note" style="text-align:right;">SUPPLY/MENT FOR EXPORT UNDER LUT WITHOUT PAYMENT OF INTEGRATED TAX</td>
     </tr>
     <tr class="net-balance-row">
-      <td colspan="3">Net Balance Due: ${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : Number(invoice.total ?? 0).toFixed(2)}</td>
+      <td colspan="3">Net Balance Due: $${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : Number(invoice.total ?? 0).toFixed(2)}</td>
     </tr>
     <tr class="thanks-row">
       <td colspan="3">We appreciate your business, thank you <span style="color:#b96b00;">&#10003;</span></td>

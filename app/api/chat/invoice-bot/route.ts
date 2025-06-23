@@ -6,7 +6,7 @@ import { getCompanyConfig, getBankDetails } from "@/lib/invoice";
 import type { InvoiceItem } from "@/lib/database";
 
 interface ChatState {
-  step: "askProjectCode" | "confirmClient" | "askItems" | "confirmInvoice" | "awaitEmail" | "done";
+  step: "askProjectCode" | "confirmClient" | "askItems" | "askPeriod" | "askPayment" | "confirmInvoice" | "awaitEmail" | "done";
   projectCode?: string;
   suggestedCode?: string;
   client?: {
@@ -17,6 +17,7 @@ interface ChatState {
   };
   items?: InvoiceItem[];
   period?: string;
+  paymentCharges?: number;
   lastInvoiceId?: number;
 }
 
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
         if (/^y(es)?$/i.test(userMsg)) {
           state.step = "askItems";
           return NextResponse.json({
-            reply: `Great! Please enter invoice items (one per line) in the order: description, qty, rate, period (period optional) — separate fields with , ; or |`,
+            reply: `Great! Please send the billing period followed by all items in one message using the format:\n<period> ( description , qty , rate | description , qty , rate )\nExample: Apr 2025 (Consulting,10,100 | Support,5,50)`,
           });
         }
         // If no, restart
@@ -137,8 +138,17 @@ export async function POST(req: NextRequest) {
       }
 
       case "askItems": {
-        // Parse items
-        const rawLines = userMsg.split(/\n/).filter((l) => l.trim().length);
+        // Parse period + items in one message
+        // Detect pattern Period (items)
+        let periodExtracted: string | undefined;
+        let itemsPart = userMsg;
+        const parenMatch = userMsg.match(/^(.*?)\((.*)\)$/s);
+        if (parenMatch) {
+          periodExtracted = parenMatch[1].trim();
+          itemsPart = parenMatch[2].replace(/\)$/,'').trim();
+          if (periodExtracted) state.period = periodExtracted;
+        }
+        const rawLines = itemsPart.split(/\||\n/).filter((l) => l.trim().length);
         const candidateLines = rawLines.length ? rawLines : [userMsg];
         const items: InvoiceItem[] = [];
         for (const line of candidateLines) {
@@ -170,12 +180,33 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ reply: "Couldn't parse items. Please provide lines like Development phase 1,2,100 (description, qty, rate)." });
         }
         state.items = items;
-        state.step = "confirmInvoice";
         const subtotal = items.reduce((s, it) => s + it.amount, 0);
-        return NextResponse.json({
-          reply: `Subtotal is ${subtotal.toFixed(2)}. Shall I generate the invoice? (yes/no)`,
-        });
+        if (!state.period) {
+          state.step = "askPeriod";
+          return NextResponse.json({ reply: `Subtotal is ${subtotal.toFixed(2)}. What is the billing period for this invoice?` });
+        }
+        state.step = "askPayment";
+        return NextResponse.json({ reply: `Subtotal is ${subtotal.toFixed(2)} for period ${state.period}. Add payment transfer charges of $35? (yes/no)` });
       }
+
+      case "askPeriod": {
+        if (!userMsg.trim()) {
+          return NextResponse.json({ reply: "Please provide a period." });
+        }
+        state.period = userMsg.trim();
+        state.step = "askPayment";
+        const subtotal = state.items!.reduce((s, it) => s + it.amount, 0);
+        return NextResponse.json({ reply: `Subtotal is ${subtotal.toFixed(2)} for period ${state.period}. Add payment transfer charges of $35? (yes/no)` });
+      }
+
+      case "askPayment": {
+        const yes = /^y(es)?$/i.test(userMsg);
+        state.paymentCharges = yes ? 35 : 0;
+        state.step = "confirmInvoice";
+        const subtotal = state.items!.reduce((s, it) => s + it.amount, 0);
+        return NextResponse.json({ reply: `Total is ${subtotal.toFixed(2)}. Shall I generate the invoice? (yes/no)` });
+      }
+
 
       case "confirmInvoice": {
         if (!/^y(es)?$/i.test(userMsg)) {
@@ -190,7 +221,7 @@ export async function POST(req: NextRequest) {
 
         const invoiceNumber = await getNextInvoiceNumber();
         const subtotal = state.items.reduce((s, it) => s + it.amount, 0);
-        const payment_charges = 0;
+        const payment_charges = state.paymentCharges ?? 0;
         const total = subtotal + payment_charges;
 
         const now = new Date();
@@ -203,7 +234,7 @@ export async function POST(req: NextRequest) {
             client_address: state.client.address,
             client_email: state.client.client_email,
             invoice_date: new Date().toISOString().split("T")[0],
-            period: "",
+            period: state.period || "",
             term: "On receipt",
             project_code: state.projectCode || "",
             subtotal,
@@ -228,7 +259,7 @@ export async function POST(req: NextRequest) {
             client_address: state.client.address,
             client_email: state.client.client_email,
             invoice_date: new Date().toISOString().split("T")[0],
-            period: "",
+            period: state.period || "",
             term: "On receipt",
             project_code: state.projectCode || "",
             subtotal,
