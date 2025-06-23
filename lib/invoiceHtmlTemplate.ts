@@ -1,5 +1,7 @@
 import { type Invoice, type InvoiceItem, type Company, type BankDetails, client } from './database';
-import { formatPeriod } from './utils';
+import { formatPeriod, formatDateToMDY } from './utils';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * Generate HTML markup for an invoice, dynamically filled from DB data.
@@ -15,13 +17,36 @@ export function generateInvoiceHtml(
   company: Company,
   bank: BankDetails
 ): string {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-  const logoPath = company.logo || company.company_logo || 'default_logo.png';
-  const logoUrl = logoPath.startsWith('http')
-    ? logoPath
-    : `${baseUrl}/uploads/${logoPath.replace(/^uploads[\\/]+/, '').replace(/^\\+/, '')}`;
+  // Convert logo to Base64 Data URI for embedding
+  const logoFileName = company.logo || company.company_logo || 'default_logo.png';
+  const logoFilePath = path.join(process.cwd(), 'public', 'uploads', path.basename(logoFileName));
+  let logoDataUrl = '';
+  if (fs.existsSync(logoFilePath)) {
+    const imageBuffer = fs.readFileSync(logoFilePath);
+    const imageType = path.extname(logoFileName).substring(1) || 'png';
+    logoDataUrl = `data:image/${imageType};base64,${imageBuffer.toString('base64')}`;
+  } else {
+    console.error(`Logo file not found at: ${logoFilePath}`);
+  }
 
-  const today = new Date().toISOString().slice(0, 10);
+    // Safely parse the invoice date, defaulting to today if invalid or missing.
+  const invoiceDateStr = invoice.invoice_date;
+  let invoiceDate = new Date(); // Default to now
+  if (invoiceDateStr) {
+    let parsedDate;
+    // Check for YYYY-MM-DD format to avoid timezone parsing issues.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(invoiceDateStr)) {
+        const [year, month, day] = invoiceDateStr.split('-').map(Number);
+        parsedDate = new Date(Date.UTC(year, month - 1, day));
+    } else {
+        // Fallback for other ISO-like formats that new Date() can handle.
+        parsedDate = new Date(invoiceDateStr);
+    }
+
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      invoiceDate = parsedDate;
+    }
+  }
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -62,7 +87,7 @@ export function generateInvoiceHtml(
   <table class="main-table">
     <tr class="header-row">
       <td class="logo-cell" style="border-right: none;">
-        <img src="${logoUrl}" alt="Company Logo" style="max-width:180px;max-height:80px;object-fit:contain;background:#fff;border-radius:4px;border:1px solid #eee;padding:4px;" />
+        <img src="${logoDataUrl}" alt="Company Logo" style="max-width:180px;max-height:80px;object-fit:contain;background:#fff;border-radius:4px;border:1px solid #eee;padding:4px;" />
       </td>
       <td class="company-cell" colspan="2">
         <div style="font-size: 1.25em; font-weight: bold;">${company.name}</div>
@@ -85,9 +110,9 @@ export function generateInvoiceHtml(
       </td>
       <td class="details-cell" colspan="2">
         <table class="details-table">
-          <tr><td>Date:</td><td>${invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-') : ''}</td></tr>
+                              <tr><td>Date:</td><td>${formatDateToMDY(invoiceDate)}</td></tr>
           <tr><td>Invoice No.:</td><td>${invoice.invoice_number}</td></tr>
-          <tr><td>Period:</td><td>${invoice.period ? invoice.period : 'N/A'}</td></tr>
+          <tr><td>Period:</td><td>${invoice.period ? formatPeriod(invoice.period) : 'N/A'}</td></tr>
           <tr><td>Term:</td><td>${invoice.term || 'On receipt'}</td></tr>
           <tr><td>Project code:</td><td>${invoice.project_code || 'N/A'}</td></tr>
         </table>
@@ -98,11 +123,13 @@ export function generateInvoiceHtml(
         <table class="items-table">
           <thead>
             <tr>
-              <th class="desc">Description</th>
-              <th class="base">Base</th>
-              <th class="unit">Unit</th>
-              <th class="rate">Rate</th>
-              <th class="amount">Amount</th>
+              <th class="desc" rowspan="2" style="vertical-align: middle;">Description</th>
+              <th colspan="2" class="rate" style="text-align: center;">Rate</th>
+              <th class="amount" rowspan="2" style="vertical-align: middle;">Amount (USD)</th>
+            </tr>
+            <tr>
+              <th class="base" style="text-align: center;">Base</th>
+              <th class="unit" style="text-align: center;">Unit</th>
             </tr>
           </thead>
           <tbody>
@@ -110,17 +137,23 @@ export function generateInvoiceHtml(
               <tr>
                 <td class="desc">${item.description}</td>
                 <td class="base">${typeof item.base_rate === 'number' ? item.base_rate.toFixed(2) : Number(item.base_rate ?? 0).toFixed(2)}</td>
-                <td class="unit">${typeof item.unit === 'number' ? item.unit : Number(item.unit ?? 0)}</td>
-                <td class="rate">${typeof item.rate === 'number' ? item.rate.toFixed(2) : (item.rate !== undefined ? Number(item.rate).toFixed(2) : (typeof item.base_rate === 'number' && typeof item.unit === 'number' ? (item.base_rate * item.unit).toFixed(2) : '0.00'))}</td>
+                <td class="unit">${typeof item.unit === 'number' ? item.unit.toFixed(2) : Number(item.unit ?? 0).toFixed(2)}</td>
                 <td class="amount">${typeof item.amount === 'number' ? item.amount.toFixed(2) : Number(item.amount ?? 0).toFixed(2)}</td>
               </tr>
             `).join('')}
+            ${Number(invoice.additional_charge ?? 0) > 0 ? `
+              <tr>
+                <td class="desc">Additional Charges</td>
+                <td class="base">${Number(invoice.additional_charge ?? 0).toFixed(2)}</td>
+                <td class="unit">1.00</td>
+                <td class="amount">${Number(invoice.additional_charge ?? 0).toFixed(2)}</td>
+              </tr>
+            ` : ''}
             ${Number(invoice.payment_charges ?? 0) > 0 ? `
               <tr>
                 <td class="desc">Payment Transfer Charges</td>
                 <td class="base">35.00</td>
-                <td class="unit">1</td>
-                <td class="rate">35.00</td>
+                <td class="unit">1.00</td>
                 <td class="amount">${typeof invoice.payment_charges === 'number' ? invoice.payment_charges.toFixed(2) : Number(invoice.payment_charges ?? 0).toFixed(2)}</td>
               </tr>
             ` : ''}

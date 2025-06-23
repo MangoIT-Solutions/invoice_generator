@@ -92,23 +92,23 @@ export async function getUserInvoices(userId?: number) {
   }
 }
 
-export async function getInvoiceWithItems(invoiceId: number) {
+export async function getInvoiceWithItems(invoiceId: number): Promise<{ invoice: Invoice; items: InvoiceItem[] } | null> {
   try {
     const invoiceResult = await client.execute({
       sql: 'SELECT * FROM invoices WHERE id = ?',
       args: [invoiceId]
     });
-    const invoiceRows = Array.isArray(invoiceResult.rows) ? invoiceResult.rows : [];
+    const invoiceRows = invoiceResult.rows as RowDataPacket[];
     if (invoiceRows.length === 0) {
       return null;
     }
-    const invoice = invoiceRows[0];
+    const invoice = invoiceRows[0] as Invoice;
 
     const itemsResult = await client.execute({
       sql: 'SELECT * FROM invoice_items WHERE invoice_id = ?',
       args: [invoiceId]
     });
-    const itemsRows = Array.isArray(itemsResult.rows) ? itemsResult.rows : [];
+    const itemsRows = itemsResult.rows as InvoiceItem[];
     return {
       invoice,
       items: itemsRows

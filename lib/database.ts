@@ -87,6 +87,12 @@ export interface BankDetails {
   wire_charges: number;
 }
 
+export interface RecurringInvoice {
+  id: number;
+  invoice_id: number;
+  next_run: string; // ISO date string YYYY-MM-DD
+}
+
 // Initialize database
 export async function initializeDatabase() {
   const connection = await pool.getConnection();
@@ -164,6 +170,15 @@ export async function initializeDatabase() {
         swift_code VARCHAR(255),
         ifsc_code VARCHAR(255),
         wire_charges VARCHAR(255) DEFAULT 0
+      )
+    `);
+    // Create recurring_invoices table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS recurring_invoices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        invoice_id INT NOT NULL,
+        next_run DATE NOT NULL,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
       )
     `);
     // Insert default admin user if not exists
