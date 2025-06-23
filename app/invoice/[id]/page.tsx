@@ -59,7 +59,7 @@ export default function InvoiceView() {
       if (!response.ok) {
         throw new Error('Failed to fetch PDF');
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -284,21 +284,24 @@ export default function InvoiceView() {
                 </div>
 
                 {/* KA and Department */}
-                <div className="px-6 py-1 text-xs">
-                  KA: {company?.admin_name || 'Rahul Gangle'}<br />
+                <div className="px-6 py-1 text-xs border-b-2 border-black">
+                  KA: {company?.admin_name || 'Matt'}<br />
                   {company?.admin_department || 'Billing Department'}, {company?.name || 'Mango IT Solutions'}
                 </div>
 
                 {/* Bank Details */}
-                <div className="px-6 py-1 text-xs border-t border-b border-black">
-                  Please wire as per bank details below & send SWIFT / bank advisory to {company?.email || 'accounts@mangoitsolutions.com'}
-                </div>
+
 
                 <div className=" px-6 py-2">
                   <table className="w-full text-xs">
                     <tbody>
                       <tr>
-                        <td className="w-24 font-medium">For credit to:</td>
+                        <td colSpan={2}>
+                          Please wire as per bank details below & send SWIFT / bank advisory to {company?.email || 'accounts@mangoitsolutions.com'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">For credit to:</td>
                         <td>{company?.name || 'Mango IT Solutions'}</td>
                       </tr>
                       <tr>
@@ -322,8 +325,12 @@ export default function InvoiceView() {
                         <td>{bank?.swift_code || 'SWIFT Code'}</td>
                       </tr>
                       <tr>
-                        <td className="font-medium">IFSC:</td>
+                        <td className="font-medium">IFSC Code:</td>
                         <td>{bank?.ifsc_code || 'IFSC Code'}</td>
+                      </tr>
+                      <tr>
+                        <td className="font-medium">Bank Wire Charges:</td>
+                        <td>On client side</td>
                       </tr>
                     </tbody>
                   </table>

@@ -14,35 +14,53 @@ export async function POST(request: NextRequest) {
 
     const invoice = {
       ...invoicePayload,
-      client_company_name: invoicePayload.client_company_name || '',
-      invoice_number: invoiceNumber
+      invoice_date: new Date().toISOString().split('T')[0], // Set current date
+      invoice_number: invoiceNumber,
     };
 
     const invoiceId = await createInvoice(invoice, items);
 
-    // Generate and save PDF right after invoice creation
+    // --- PDF Generation ---
     const { getInvoiceWithItems, getCompanyConfig, getBankDetails } = await import('@/lib/invoice');
-    const { generateInvoiceHtml } = await import('@/lib/invoiceHtmlTemplate');
     const { generateInvoicePdf } = await import('@/lib/invoicePdf');
+
     const dbInvoiceData = await getInvoiceWithItems(invoiceId);
+    if (!dbInvoiceData || !dbInvoiceData.invoice) {
+      console.error(`[Invoice] Failed to retrieve invoice data after creation for invoiceId=${invoiceId}`);
+      return NextResponse.json({ error: 'Failed to retrieve invoice data after creation' }, { status: 500 });
+    }
+
     const company = await getCompanyConfig();
     const bank = await getBankDetails();
-    const html = generateInvoiceHtml(dbInvoiceData.invoice, dbInvoiceData.items, company, bank);
     const pdfFileName = `invoice-${invoiceNumber}.pdf`;
+
+    // The invoice object from the DB is the source of truth
+    const invoiceWithItems = {
+      ...dbInvoiceData.invoice,
+      items: dbInvoiceData.items,
+    };
+
+    if (!company || !bank) {
+        return NextResponse.json({ error: 'Server configuration for company or bank is missing.' }, { status: 500 });
+    }
+
     try {
       console.log(`[Invoice] Generating PDF for invoiceId=${invoiceId}, invoiceNumber=${invoiceNumber} as ${pdfFileName}`);
-      await generateInvoicePdf(html, pdfFileName);
+      await generateInvoicePdf(invoiceWithItems, company, bank, pdfFileName);
       console.log(`[Invoice] PDF generated successfully: ${pdfFileName}`);
-    } catch (pdfError) {
+    } catch (pdfError: unknown) {
       console.error(`[Invoice] Failed to generate PDF for invoiceId=${invoiceId}:`, pdfError);
-      return NextResponse.json({ error: 'Failed to generate invoice PDF', details: pdfError?.message || pdfError }, { status: 500 });
+      const errorMessage = pdfError instanceof Error ? pdfError.message : String(pdfError);
+      return NextResponse.json({ error: 'Failed to generate invoice PDF', details: errorMessage }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, invoiceId, invoiceNumber });
-  } catch (error) {
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error creating invoice:', error);
     return NextResponse.json(
-      { error: 'Failed to create invoice' },
+      { error: 'Failed to create invoice', details: errorMessage },
       { status: 500 }
     );
   }

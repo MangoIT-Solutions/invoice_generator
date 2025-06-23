@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from './context/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
+import ChatbotPortal from '@/components/ChatbotPortal';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <Toaster />
+            <ChatbotPortal />
         </AuthProvider>
       </body>
     </html>

@@ -5,6 +5,21 @@ import nodemailer from 'nodemailer';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'http://localhost:3000',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Credentials': 'true',
+};
+
+// Handle preflight requests for CORS
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(request: NextRequest, context: { params: { id: string } }) {
   try {
     await initializeDatabase();
@@ -20,46 +35,46 @@ export async function POST(request: NextRequest, context: { params: { id: string
         if (body.message) message = body.message;
       }
     } catch (e) {
-      // If parsing fails, just use defaults (likely a GET or empty POST)
+      // If parsing fails, just use defaults
     }
     const invoiceData = await getInvoiceWithItems(parseInt(id));
     if (!invoiceData) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404, headers: corsHeaders });
     }
     const company = await getCompanyConfig();
     const bank = await getBankDetails();
-    // Only use the existing PDF generated at invoice creation
+
     const pdfFileName = `invoice-${invoiceData.invoice.invoice_number}.pdf`;
     const pdfPath = path.join(process.cwd(), 'public', 'invoices', pdfFileName);
     let pdfBuffer: Buffer | null = null;
+
     if (existsSync(pdfPath)) {
       pdfBuffer = readFileSync(pdfPath);
     } else {
       // Regenerate PDF if missing
-      const { generateInvoiceHtml } = await import('@/lib/invoiceHtmlTemplate');
-      const html = generateInvoiceHtml(invoiceData.invoice, invoiceData.items, company, bank);
-      await (await import('@/lib/invoicePdf')).generateInvoicePdf(html, pdfFileName);
+      const { generateInvoicePdf } = await import('@/lib/invoicePdf');
+      const invoiceWithItems = { ...invoiceData.invoice, items: invoiceData.items };
+      await generateInvoicePdf(invoiceWithItems, company, bank, pdfFileName);
       if (existsSync(pdfPath)) {
         pdfBuffer = readFileSync(pdfPath);
       } else {
-        return NextResponse.json({ error: 'Failed to generate PDF for email.' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to regenerate PDF for email.' }, { status: 500, headers: corsHeaders });
       }
     }
-    // Configure SMTP transporter
-    // Enable less secure app access for Gmail or use an App Password if 2FA is enabled
+
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,
-      secure: false, // true for 465, false for other ports
+      secure: false,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
       tls: {
-        rejectUnauthorized: false, // Allow self-signed certificates (Gmail sometimes requires this)
+        rejectUnauthorized: false,
       },
     });
-    // Compose email
+
     const mailOptions = {
       from: process.env.SMTP_NAME && process.env.SMTP_FROM
         ? `${process.env.SMTP_NAME} <${process.env.SMTP_FROM}>`
@@ -75,11 +90,11 @@ export async function POST(request: NextRequest, context: { params: { id: string
         }
       ],
     };
-    // Send email
+
     await transporter.sendMail(mailOptions);
-    return NextResponse.json({ success: true, message: 'Invoice sent successfully' });
+    return NextResponse.json({ success: true, message: 'Invoice sent successfully' }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error sending invoice email:', error);
-    return NextResponse.json({ error: 'Failed to send invoice email' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to send invoice email' }, { status: 500, headers: corsHeaders });
   }
 }
