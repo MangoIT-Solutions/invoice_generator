@@ -6,7 +6,7 @@ import { getCompanyConfig, getBankDetails } from "@/lib/invoice";
 import type { InvoiceItem } from "@/lib/database";
 
 interface ChatState {
-  step: "askProjectCode" | "confirmClient" | "askItems" | "askPeriod" | "askPayment" | "confirmInvoice" | "awaitEmail" | "done";
+  step: "askProjectCode" | "confirmClient" | "askItems" | "askPeriod" | "askPayment" | "confirmInvoice" | "awaitEmail" | "awaitAnother" | "done";
   projectCode?: string;
   suggestedCode?: string;
   client?: {
@@ -290,7 +290,7 @@ export async function POST(req: NextRequest) {
       case "awaitEmail": {
         if (/^skip$/i.test(userMsg)) {
           state.step = "done";
-          return NextResponse.json({ reply: "Okay, done! If you need anything else just let me know." });
+          return NextResponse.json({ reply: "Okay, done! Would you like to generate another invoice? (yes/no)" });
         }
         const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
         if (!emailRegex.test(userMsg)) {
@@ -309,6 +309,18 @@ export async function POST(req: NextRequest) {
         }
         state.step = "done";
         return NextResponse.json({ reply: "Email sent! Anything else I can help with?" });
+      }
+
+      case "awaitAnother": {
+        if (/^y(es)?$/i.test(userMsg)) {
+          state.step = "askProjectCode";
+          return NextResponse.json({ reply: "Sure! Please provide the project code for the new invoice." });
+        }
+        if (/^n(o)?$/i.test(userMsg)) {
+          state.step = "done";
+          return NextResponse.json({ reply: "Alright, I'm here if you need anything else." });
+        }
+        return NextResponse.json({ reply: "Please reply with 'yes' or 'no'." });
       }
 
       case "done": {
