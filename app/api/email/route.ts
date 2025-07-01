@@ -1,18 +1,28 @@
-// app/api/email/route.ts
 import { google } from "googleapis";
 import { simpleParser } from "mailparser";
 import { NextResponse } from "next/server";
+import { getRefreshToken } from "@/lib/database";
 
 export async function GET() {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken) {
+    return NextResponse.json(
+      { error: "Refresh token not found in DB" },
+      { status: 500 }
+    );
+  }
+
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_REDIRECT_URI
   );
+  console.log("OAuth2 Client Created:", oauth2Client);
 
   oauth2Client.setCredentials({
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    refresh_token: refreshToken,
   });
+  console.log(oauth2Client.credentials);
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
@@ -27,9 +37,8 @@ export async function GET() {
     const emails: any[] = [];
 
     for (const message of messages) {
-      if (!message.id) {
-        continue;
-      }
+      if (!message.id) continue;
+
       const msg = await gmail.users.messages.get({
         userId: "me",
         id: message.id,
@@ -54,6 +63,8 @@ export async function GET() {
         },
       });
     }
+    console.log("Emails fetched successfully:", emails);
+    ``;
 
     return NextResponse.json({ emails });
   } catch (error: any) {

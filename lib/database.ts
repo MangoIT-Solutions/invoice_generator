@@ -277,3 +277,20 @@ export async function saveRefreshToken(refreshToken: string) {
     connection.release();
   }
 }
+export async function getRefreshToken(): Promise<string | null> {
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.query(
+      `SELECT \`value\` FROM config WHERE \`key\` = ?`,
+      ["googleapiRefreshToken"]
+    );
+
+    if (Array.isArray(rows) && rows.length > 0) {
+      return rows[0].value;
+    }
+
+    return null; // No token found
+  } finally {
+    connection.release();
+  }
+}
