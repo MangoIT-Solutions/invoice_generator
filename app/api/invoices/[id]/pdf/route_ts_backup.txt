@@ -1,0 +1,272 @@
+import { NextRequest } from 'next/server';
+import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/lib/invoice';
+import { initializeDatabase } from '@/lib/database';
+import jsPDF from 'jspdf';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
+import path from 'path';
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+    await initializeDatabase();
+    const invoiceId = Number(params.id);
+    const pdfDir = path.join(process.cwd(), 'public', 'invoices');
+    const pdfPath = path.join(pdfDir, `invoice-${invoiceId}.pdf`);
+    if (existsSync(pdfPath)) {
+        const pdfBuffer = readFileSync(pdfPath);
+        return new Response(pdfBuffer, {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename=invoice-${invoiceId}.pdf`,
+                'Content-Length': String(pdfBuffer.length),
+            },
+        });
+    } else {
+        // Regenerate PDF if not found
+        const invoiceData = await getInvoiceWithItems(invoiceId);
+        if (!invoiceData) {
+            return new Response('Invoice not found', { status: 404 });
+        }
+        const company = await getCompanyConfig();
+        const bank = await getBankDetails();
+        // Load logo as base64 (prefer company_logo if present)
+        let logoBase64 = '';
+        // Fix company config type if it's an array or RowDataPacket[]
+        const companyData = Array.isArray(company) ? company[0] : company;
+        // If companyData is a RowDataPacket, convert to plain object
+        const plainCompany = (companyData && typeof companyData.toJSON === 'function') ? companyData.toJSON() : companyData;
+        // Calculate logo size to fit max height 50px and max width 160px, preserving aspect ratio
+        let logoWidth = 200, logoHeight = 50;
+        try {
+            let logoPath = '';
+            if (companyData?.company_logo) {
+                let logoRelPath = companyData.company_logo.replace(/^\/+/, '')
+                if (!logoRelPath.startsWith('uploads/')) {
+                    logoRelPath = 'uploads/' + logoRelPath;
+                }
+                logoPath = path.join(process.cwd(), 'public', logoRelPath);
+            } else {
+                logoPath = path.join(process.cwd(), 'public', 'logo.png');
+            }
+            const logoBuffer = readFileSync(logoPath);
+            logoBase64 = logoBuffer.toString('base64');
+        } catch (e) {
+            console.error('Logo read error:', e);
+        }
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        let imageType = 'PNG';
+        if (plainCompany?.company_logo && plainCompany.company_logo.match(/\.svg$/i)) {
+            imageType = 'SVG';
+        } else if (plainCompany?.company_logo && plainCompany.company_logo.match(/\.jpg$|\.jpeg$/i)) {
+            imageType = 'JPEG';
+        }
+        if (logoBase64) {
+            // Place logo on the left, vertically aligned with company info
+            doc.addImage(`data:image/${imageType.toLowerCase()};base64,${logoBase64}`, imageType, 40, 30, logoWidth, logoHeight);
+        }
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text(plainCompany?.name || 'Company Name', 425, 45, { maxWidth: 160, align: 'right' });
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text('a web & mobile dev company', 550, 50, { maxWidth: 160, align: 'right' });
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        let companyAddress = (plainCompany?.address || '').replace(/\n|\r/g, ', ');
+        doc.text(companyAddress, 525, 70, { maxWidth: 300, align: 'right' });
+        doc.text(plainCompany?.contact || '', 400, 80, { maxWidth: 300, align: 'right' });
+        doc.text(plainCompany?.email || '', 400, 90, { maxWidth: 300, align: 'right' });
+        doc.text('GSTIN-23XXXXXPS9604H1Z1', 535, 90, { maxWidth: 300, align: 'right' });
+
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Software Service Invoice', 200, 125);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        // Draw a line as separation
+        doc.setLineWidth(0.5);
+        doc.line(30, 130, 570, 130);
+
+        // --- Bill To Block ---
+        let billToY = 150;
+        doc.setFont('helvetica', 'normal');
+        doc.text('Bill To', 40, billToY);
+        doc.setFont('helvetica', 'bold');
+        let billToYNext = billToY + 10;
+        // 1. Client company name
+        if (invoiceData.invoice.client_company_name) {
+            // billToYNext += 15;
+            doc.text(invoiceData.invoice.client_company_name, 40, billToYNext);
+        }
+        doc.setFont('helvetica', 'normal');
+        // 2. Client address (split into lines)
+        const addressLines = (invoiceData.invoice.client_address || '').split(/\r?\n/);
+        for (const line of addressLines) {
+            billToYNext += 15;
+            doc.text(line.trim(), 40, billToYNext, { maxWidth: 250 });
+        }
+
+        // 3. KA and Email for client
+        billToYNext += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`KA: ${invoiceData.invoice.client_name} /`, 40, billToYNext, { maxWidth: 250 });
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Email: ${invoiceData.invoice.client_email}`, 150, billToYNext, { maxWidth: 250 });
+
+
+        // --- End Bill To Block ---
+        // Remove company KA from Bill To, move to footer (already present in footer section below)
+        // --- Remove double border: only draw one outer border at the end ---
+        let infoY_pdf = 150;
+        doc.setFont('helvetica', 'normal');
+        doc.text('Date', 350, infoY_pdf);
+        doc.setFont('helvetica', 'bold');
+        doc.text(new Date(invoiceData.invoice.invoice_date).toLocaleDateString(), 450, infoY_pdf);
+        infoY_pdf += 15;
+        doc.setFont('helvetica', 'normal');
+        doc.text('Invoice No.', 350, infoY_pdf);
+        doc.setFont('helvetica', 'bold');
+        doc.text(invoiceData.invoice.invoice_number, 450, infoY_pdf);
+        infoY_pdf += 15;
+        doc.setFont('helvetica', 'normal');
+        doc.text('Period', 350, infoY_pdf);
+        doc.setFont('helvetica', 'bold');
+        doc.text(invoiceData.invoice.period || '', 450, infoY_pdf);
+        infoY_pdf += 15;
+        doc.setFont('helvetica', 'normal');
+        doc.text('Term', 350, infoY_pdf);
+        doc.setFont('helvetica', 'bold');
+        doc.text(invoiceData.invoice.term || '', 450, infoY_pdf);
+        infoY_pdf += 15;
+        doc.setFont('helvetica', 'normal');
+        doc.text('Project code', 350, infoY_pdf);
+        doc.setFont('helvetica', 'bold');
+        doc.text(invoiceData.invoice.project_code || '', 450, infoY_pdf);
+        let y = Math.max(billToYNext + 60, infoY_pdf + 20);
+
+        // Draw a line as separation
+        doc.setLineWidth(0.5);
+        doc.line(30, 240, 570, 240);
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+
+        doc.text('Description', 45, y);
+        doc.text('Rate', 300, y, { align: 'center' });
+        doc.text('Amount (USD)', 400, y, { align: 'right' });
+        // Draw Rate sub-columns
+        doc.setFont('helvetica', 'bold');
+        doc.text('Base', 250, y + 15, { align: 'center' });
+        doc.text('Unit', 350, y + 15, { align: 'center' });
+        // Draw a line as separation
+        doc.setLineWidth(0.5);
+        doc.line(30, 270, 570, 270);
+        // Draw header lines
+        doc.setLineWidth(0.5);
+        //doc.line(40, y + 5, 550, y + 5); // under main header
+        // doc.line(220, y, 220, y + 30); // left border of Rate
+        // doc.line(380, y, 380, y + 30); // right border of Rate
+        //  doc.line(300, y + 5, 300, y + 30); // between Base and Unit
+        //   doc.line(40, y + 30, 550, y + 30); // under sub-header
+        y += 40;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        // Fix: ensure items are always InvoiceItem[]
+        const items = Array.isArray(invoiceData.items) ? (invoiceData.items as any[]) : [];
+        items.forEach((item: any, idx: number) => {
+            doc.text(`${idx + 1}. ${item.description || ''}`, 45, y);
+            doc.text(String(item.base_rate ?? ''), 250, y, { align: 'center', maxWidth: 50 });
+            doc.text(String(item.unit ?? ''), 350, y, { align: 'center', maxWidth: 30 });
+            doc.text(String(item.amount ?? ''), 480, y, { align: 'right', maxWidth: 60 });
+            //doc.setDrawColor(220);            
+            y += 18;
+        });
+        if (invoiceData.invoice.payment_charges && Number(invoiceData.invoice.payment_charges) > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('Payment Transfer Charges', 45, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text('35', 250, y, { align: 'center' });
+            doc.text('1.00', 350, y, { align: 'center' });
+            doc.text(String(invoiceData.invoice.payment_charges), 480, y, { align: 'right' });
+            //doc.setDrawColor(220);
+
+            y += 18;
+        }
+        y += 10;
+        doc.getLineWidth(0.5);
+        doc.line(30, y, 570, y); // horizontal line
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('Net Balance Due', 300, y);
+        doc.text(String(invoiceData.invoice.total), 400, y, { align: 'right' });
+        doc.text('USD', 480, y, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        y += 30;
+        doc.setFontSize(9);
+        if (plainCompany?.hsn_sac) {
+            doc.text(`HSN / SAC: ${plainCompany.hsn_sac}`, 45, y);
+        }
+        doc.text('SUPPLY/MENT FOR EXPORT UNDER LUT WITHOUT PAYMENT OF INTEGRATED TAX', 200, y);
+        y += 30;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('We appreciate your business, thank you', 45, y);
+        y += 15;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`KA: ${plainCompany?.admin_name || ''}, ${plainCompany?.admin_department || ''}`, 45, y);
+        y += 15;
+        doc.text('Please wire as per bank details below & send SWIFT / bank advisory to ' + (plainCompany?.email || ''), 45, y, { maxWidth: 500 });
+        y += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.text('For credit to', 45, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${plainCompany?.name || ''}, ${plainCompany?.address || ''}`, 120, y, { maxWidth: 350 });
+        y += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Account with', 45, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(bank?.bank_name || '', 120, y);
+        y += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Bank/Branch address', 45, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(bank?.bank_address || '', 150, y);
+        y += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.text('SWIFT', 45, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(bank?.swift_code || '', 120, y);
+        y += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.text('IFSC CODE', 45, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(bank?.ifsc_code || '', 120, y);
+        y += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Bank Wire Charges', 45, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text('On client side', 150, y);
+        y += 20;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Late payments charges, if paid later than 7days per terms, @ 1.5% monthly interest or USD 35, whichever is greater', 45, y, { maxWidth: 500 });
+        // Draw a visible border around the entire invoice content (outer box) ONCE at the end
+        doc.setDrawColor(30, 30, 30); // dark border
+        doc.setLineWidth(2);
+        // (x, y, width, height) - adjust as needed to fit all content
+        doc.rect(30, 20, 540, y + 180, 'S');
+        // Output PDF and save to disk
+        const pdf = doc.output('arraybuffer');
+        const pdfBuffer = Buffer.from(new Uint8Array(pdf));
+        mkdirSync(pdfDir, { recursive: true });
+        writeFileSync(pdfPath, new Uint8Array(pdfBuffer));
+        // Serve the file
+        return new Response(pdfBuffer, {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename=invoice-${invoiceId}.pdf`,
+                'Content-Length': String(pdfBuffer.length),
+            },
+        });
+    }
+}
