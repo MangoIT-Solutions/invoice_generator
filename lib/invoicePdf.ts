@@ -44,7 +44,9 @@ export async function generateInvoicePdf(
       subtotal: invoiceData.subtotal || 0,
       payment_charges: invoiceData.payment_charges || 0,
       total: invoiceData.total || 0,
-      status: invoiceData.status || 'draft'
+      status: invoiceData.status || 'draft',
+      user_id: invoiceData.user_id ?? 1, // Provide a default or fetch as needed
+      created_at: invoiceData.created_at ?? new Date().toISOString(), // Provide a default or fetch as needed
     },
     invoiceData.items || [],
     company,
