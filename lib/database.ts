@@ -1,5 +1,7 @@
 import mysql from "mysql2/promise";
 import { config } from "dotenv";
+import bcrypt from "bcryptjs";
+
 config();
 
 // MySQL connection config (update with your credentials)
@@ -290,6 +292,35 @@ export async function getRefreshToken(): Promise<string | null> {
     }
 
     return null; // No token found
+  } finally {
+    connection.release();
+  }
+}
+
+export async function getAutomateUser(): Promise<number> {
+  const username = process.env.AUTOMATE_USER || "automate";
+  const email = `${username}@system.local`;
+  const password = await bcrypt.hash("automate123", 10); // Dummy password
+
+  const connection = await pool.getConnection();
+  try {
+    // Check if user exists
+    const [rows] = await connection.query(
+      "SELECT id FROM users WHERE username = ? LIMIT 1",
+      [username]
+    );
+
+    if ((rows as any[]).length > 0) {
+      return (rows as any)[0].id;
+    }
+
+    // If not found, insert new automate user
+    const [result] = await connection.query(
+      "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
+      [username, email, password, "user"]
+    );
+
+    return (result as any).insertId;
   } finally {
     connection.release();
   }

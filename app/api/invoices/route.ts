@@ -19,6 +19,10 @@ export async function POST(request: NextRequest) {
     };
 
     const invoiceId = await createInvoice(invoice, items);
+    console.log("[API] Received Invoice Payload:", invoicePayload);
+    console.log("[API] Invoice Items:", items);
+    console.log("[API] Created Invoice ID:", invoiceId);
+
 
     // --- PDF Generation ---
     const { getInvoiceWithItems, getCompanyConfig, getBankDetails } = await import('@/lib/invoice');

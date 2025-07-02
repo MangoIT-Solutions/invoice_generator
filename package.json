@@ -60,6 +60,7 @@
     "jspdf": "^2.5.2",
     "lucide-react": "^0.446.0",
     "mailparser": "^3.7.4",
+    "mimetext": "^3.0.27",
     "mysql2": "^3.14.1",
     "next": "13.5.1",
     "next-themes": "^0.3.0",

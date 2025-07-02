@@ -1,76 +1,63 @@
-import { google } from "googleapis";
-import { simpleParser } from "mailparser";
 import { NextResponse } from "next/server";
-import { getRefreshToken } from "@/lib/database";
+import { parseEmailsFromGmail } from "@/lib/parseEmailToInvoice";
+import { sendInvoiceToApi } from "@/lib/sendInvoiceToApi";
+import { sendInvoiceByGmail } from "@/lib/sendInvoiceByGmail";
+import path from "path";
 
 export async function GET() {
-  const refreshToken = await getRefreshToken();
-  if (!refreshToken) {
-    return NextResponse.json(
-      { error: "Refresh token not found in DB" },
-      { status: 500 }
-    );
-  }
-
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  );
-  console.log("OAuth2 Client Created:", oauth2Client);
-
-  oauth2Client.setCredentials({
-    refresh_token: refreshToken,
-  });
-  console.log(oauth2Client.credentials);
-
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
   try {
-    const response = await gmail.users.messages.list({
-      userId: "me",
-      q: 'label:invoices is:unread subject:"Invoice Request"',
-      maxResults: 5,
-    });
+    const { gmail, parsedInvoices } = await parseEmailsFromGmail();
 
-    const messages = response.data.messages || [];
-    const emails: any[] = [];
+    const results = [];
 
-    for (const message of messages) {
-      if (!message.id) continue;
+    for (const invoice of parsedInvoices) {
+      // 1. Save invoice to DB
+      const res = await sendInvoiceToApi(invoice.payload);
 
-      const msg = await gmail.users.messages.get({
-        userId: "me",
-        id: message.id,
-        format: "raw",
-      });
+      // 2. Extract invoice ID safely
 
-      const parsed = await simpleParser(Buffer.from(msg.data.raw!, "base64"));
+      const invoiceId = res?.data?.invoiceId || res?.data?.id; 
+      const invoiceNumber = res?.data?.invoiceNumber;
 
-      emails.push({
-        id: msg.data.id,
-        from: parsed.from?.text,
-        subject: parsed.subject,
-        body: parsed.text,
-      });
+      if (!invoiceId) throw new Error("Invoice ID missing after save");
 
-      // ✅ Mark email as read
+      console.log("Saved Invoice Response:", res);
+      console.log("Resolved Invoice ID:", invoiceId);
+
+      // 3. Path to the generated PDF in public/invoices/
+      const pdfPath = path.join(
+        process.cwd(),
+        "public",
+        "invoices",
+        `invoice-${invoiceNumber}.pdf`
+      );
+
+      // 4. Send email with attached PDF to original sender
+      await sendInvoiceByGmail(
+        invoice.payload.client_email,
+        `Invoice #${invoiceId}`,
+        "Please find your invoice attached.",
+        pdfPath
+      );
+
+      // 5. Push response result
+      results.push({ invoiceId, email: invoice.payload.client_email });
+
+      // 6. Mark email as read
       await gmail.users.messages.modify({
         userId: "me",
-        id: message.id,
+        id: invoice.id,
         requestBody: {
           removeLabelIds: ["UNREAD"],
         },
       });
     }
-    console.log("Emails fetched successfully:", emails);
-    ``;
 
-    return NextResponse.json({ emails });
+    return NextResponse.json({ success: true, invoices: results });
   } catch (error: any) {
-    console.error("Gmail Read Error:", error);
+    console.error("Email Read Error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch emails" },
+      { error: error.message || "Failed to process emails" },
       { status: 500 }
     );
   }
