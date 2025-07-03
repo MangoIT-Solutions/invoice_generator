@@ -11,13 +11,13 @@ export async function GET(
 ) {
   try {
     await initializeDatabase();
-    const invoiceId = Number(await params);
+    const { id } = await params;
     const pdfDir = path.join(process.cwd(), 'public', 'invoices');
-    const pdfPath = path.join(pdfDir, `invoice-${invoiceId}.pdf`);
+    const pdfPath = path.join(pdfDir, `invoice-${id}.pdf`);
 
     // Check if PDF already exists, if not generate it
     if (!existsSync(pdfPath)) {
-      const invoiceData = await getInvoiceWithItems(invoiceId);
+      const invoiceData = await getInvoiceWithItems(id);
       if (!invoiceData) {
         return new Response('Invoice not found', { status: 404 });
       }
@@ -36,7 +36,7 @@ export async function GET(
         invoiceWithItems,
         company,
         bank,
-        `invoice-${invoiceId}.pdf`
+        `invoice-${id}.pdf`
       );
     }
 
@@ -46,7 +46,7 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename=invoice-${invoiceId}.pdf`,
+        'Content-Disposition': `attachment; filename=invoice-${id}.pdf`,
         'Content-Length': String(pdfBuffer.length),
       },
     });
