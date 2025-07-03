@@ -7,7 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings, Save } from 'lucide-react';
 import { toast } from 'sonner';
+<<<<<<< HEAD
 import router from 'next/router';
+=======
+>>>>>>> emailReader
 
 export default function InvoiceConfig() {
   const [isLoading, setIsLoading] = useState(false);

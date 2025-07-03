@@ -12,7 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
+<<<<<<< HEAD
 import router from 'next/router';
+=======
+>>>>>>> emailReader
 
 interface User {
   id: number;
@@ -59,7 +62,11 @@ export default function UserManagement() {
     try {
       const url = editingUser ? `/api/admin/users/${editingUser.id}` : '/api/admin/users';
       const method = editingUser ? 'PUT' : 'POST';
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> emailReader
       const response = await fetch(url, {
         method,
         headers: {

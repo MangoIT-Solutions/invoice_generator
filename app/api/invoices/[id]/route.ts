@@ -3,12 +3,21 @@ import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/lib/inv
 import { initializeDatabase } from '@/lib/database';
 import { client } from '@/lib/database';
 
+<<<<<<< HEAD
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
     await initializeDatabase();
 
     const { id } = await params;
     const invoiceData = await getInvoiceWithItems(id);
+=======
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
+  try {
+    await initializeDatabase();
+
+    const { id } = context.params;
+    const invoiceData = await getInvoiceWithItems(parseInt(id));
+>>>>>>> emailReader
 
     if (!invoiceData) {
       return NextResponse.json(
@@ -34,6 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
+<<<<<<< HEAD
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
     await initializeDatabase();
@@ -41,6 +51,15 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await client.execute({
       sql: 'DELETE FROM invoices WHERE id = ?',
       args: [id],
+=======
+export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+  try {
+    await initializeDatabase();
+    const { id } = context.params;
+    await client.execute({
+      sql: 'DELETE FROM invoices WHERE id = ?',
+      args: [parseInt(id)],
+>>>>>>> emailReader
     });
     return NextResponse.json({ success: true });
   } catch (error) {

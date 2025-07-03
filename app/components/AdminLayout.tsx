@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 'use client';
 
 import { useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+=======
+"use client";
+
+import { useState } from "react";
+import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+>>>>>>> emailReader
 import {
   Settings,
   Users,
@@ -12,8 +21,13 @@ import {
   LogOut,
   Menu,
   X,
+<<<<<<< HEAD
   CreditCard
 } from 'lucide-react';
+=======
+  CreditCard,
+} from "lucide-react";
+>>>>>>> emailReader
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,13 +35,22 @@ interface AdminLayoutProps {
   onTabChange: (tab: string) => void;
 }
 
+<<<<<<< HEAD
 export default function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutProps) {
+=======
+export default function AdminLayout({
+  children,
+  activeTab,
+  onTabChange,
+}: AdminLayoutProps) {
+>>>>>>> emailReader
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
     logout();
+<<<<<<< HEAD
     router.push('/');
   };
 
@@ -38,14 +61,36 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
     { id: 'invoice-config', label: 'Invoice Config', icon: Settings },
     { id: 'generate', label: 'Generate Invoice', icon: FileText },
     { id: 'invoices', label: 'Invoices', icon: FileText }, // New menu item
+=======
+    router.push("/");
+  };
+
+  const menuItems = [
+    { id: "users", label: "User Management", icon: Users },
+    { id: "company", label: "Company Config", icon: Building2 },
+    { id: "bank", label: "Bank Details", icon: CreditCard }, // Restored Bank Details menu item
+    { id: "invoice-config", label: "Invoice Config", icon: Settings },
+    { id: "generate", label: "Generate Invoice", icon: FileText },
+    { id: "invoices", label: "Invoices", icon: FileText }, // New menu item
+    { id: "authorization", label: "Authorization", icon: Settings }, // New menu item
+>>>>>>> emailReader
   ];
 
   // Only show 'User Management' if user is admin, and only show 'Generate Invoice' if user is a regular user
   let filteredMenuItems: typeof menuItems = [];
+<<<<<<< HEAD
   if (user?.role === 'admin') {
     filteredMenuItems = menuItems;
   } else if (user?.role === 'user') {
     filteredMenuItems = menuItems.filter(item => item.id === 'generate' || item.id === 'invoices');
+=======
+  if (user?.role === "admin") {
+    filteredMenuItems = menuItems;
+  } else if (user?.role === "user") {
+    filteredMenuItems = menuItems.filter(
+      (item) => item.id === "generate" || item.id === "invoices"
+    );
+>>>>>>> emailReader
   }
 
   return (
@@ -53,12 +98,27 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
+<<<<<<< HEAD
           <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+=======
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setSidebarOpen(false)}
+          />
+>>>>>>> emailReader
         </div>
       )}
 
       {/* Sidebar */}
+<<<<<<< HEAD
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:inset-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+=======
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:inset-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+>>>>>>> emailReader
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
           <Button
@@ -98,8 +158,17 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
               </span>
             </div>
             <div className="ml-3">
+<<<<<<< HEAD
               <p className="text-sm font-medium text-gray-700">{user?.username}</p>
               <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>
+=======
+              <p className="text-sm font-medium text-gray-700">
+                {user?.username}
+              </p>
+              <p className="text-xs text-gray-500">
+                {user?.role === "admin" ? "Administrator" : "User"}
+              </p>
+>>>>>>> emailReader
             </div>
           </div>
           <Button
@@ -126,6 +195,7 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
             <Menu className="h-5 w-5" />
           </Button>
           <h2 className="text-lg font-semibold text-gray-800">
+<<<<<<< HEAD
             {menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}
           </h2>
         </div>
@@ -137,3 +207,15 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
     </div>
   );
 }
+=======
+            {menuItems.find((item) => item.id === activeTab)?.label ||
+              "Dashboard"}
+          </h2>
+        </div>
+
+        <main className="p-6">{children}</main>
+      </div>
+    </div>
+  );
+}
+>>>>>>> emailReader

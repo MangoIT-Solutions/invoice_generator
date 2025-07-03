@@ -20,10 +20,17 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
+<<<<<<< HEAD
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
     await initializeDatabase();
     const { id } = await params;
+=======
+export async function POST(request: NextRequest, context: { params: { id: string } }) {
+  try {
+    await initializeDatabase();
+    const { id } = context.params;
+>>>>>>> emailReader
     let to = '';
     let subject = '';
     let message = '';
@@ -37,7 +44,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     } catch (e) {
       // If parsing fails, just use defaults
     }
+<<<<<<< HEAD
     const invoiceData = await getInvoiceWithItems(id);
+=======
+    const invoiceData = await getInvoiceWithItems(parseInt(id));
+>>>>>>> emailReader
     if (!invoiceData) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404, headers: corsHeaders });
     }

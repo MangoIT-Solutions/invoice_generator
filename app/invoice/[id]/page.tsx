@@ -38,12 +38,15 @@ export default function InvoiceView() {
 
   const fetchInvoice = async () => {
     try {
+<<<<<<< HEAD
       if (!params || !('id' in params) || !params.id) {
         toast.error('Invalid invoice ID');
         router.push('/dashboard');
         setIsLoading(false);
         return;
       }
+=======
+>>>>>>> emailReader
       const response = await fetch(`/api/invoices/${params.id}`);
       const data = await response.json();
       if (response.ok) {
@@ -61,10 +64,13 @@ export default function InvoiceView() {
 
   const generatePDF = async () => {
     try {
+<<<<<<< HEAD
       if (!params || !('id' in params) || !params.id) {
         toast.error('Invalid invoice ID');
         return;
       }
+=======
+>>>>>>> emailReader
       const response = await fetch(`/api/invoices/${params.id}/pdf`);
       if (!response.ok) {
         throw new Error('Failed to fetch PDF');
@@ -87,10 +93,13 @@ export default function InvoiceView() {
 
   const sendEmail = async () => {
     try {
+<<<<<<< HEAD
       if (!params || !('id' in params) || !params.id) {
         toast.error('Invalid invoice ID');
         return;
       }
+=======
+>>>>>>> emailReader
       const response = await fetch(`/api/invoices/${params.id}/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

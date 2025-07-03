@@ -1,13 +1,22 @@
 import type { Config } from 'tailwindcss';
+<<<<<<< HEAD
 import defaultTheme from 'tailwindcss/defaultTheme';
 
 const config: Config = {
   darkMode: 'class',
+=======
+
+const config: Config = {
+  darkMode: ['class'],
+>>>>>>> emailReader
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+<<<<<<< HEAD
     './src/**/*.{js,ts,jsx,tsx,mdx}',
+=======
+>>>>>>> emailReader
   ],
   theme: {
     extend: {
@@ -87,10 +96,14 @@ const config: Config = {
       },
     },
   },
+<<<<<<< HEAD
   plugins: [
     require('tailwindcss-animate'),
     require('@tailwindcss/typography'),
     require('@tailwindcss/forms'),
   ],
+=======
+  plugins: [require('tailwindcss-animate')],
+>>>>>>> emailReader
 };
 export default config;

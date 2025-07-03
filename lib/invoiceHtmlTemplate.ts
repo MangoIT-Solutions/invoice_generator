@@ -18,7 +18,11 @@ export function generateInvoiceHtml(
   bank: BankDetails
 ): string {
   // Convert logo to Base64 Data URI for embedding
+<<<<<<< HEAD
   const logoFileName = company.company_logo || 'default_logo.png';
+=======
+  const logoFileName = company.logo || company.company_logo || 'default_logo.png';
+>>>>>>> emailReader
   const logoFilePath = path.join(process.cwd(), 'public', 'uploads', path.basename(logoFileName));
   let logoDataUrl = '';
   if (fs.existsSync(logoFilePath)) {
@@ -29,18 +33,30 @@ export function generateInvoiceHtml(
     console.error(`Logo file not found at: ${logoFilePath}`);
   }
 
+<<<<<<< HEAD
   // Safely parse the invoice date, defaulting to today if invalid or missing.
+=======
+    // Safely parse the invoice date, defaulting to today if invalid or missing.
+>>>>>>> emailReader
   const invoiceDateStr = invoice.invoice_date;
   let invoiceDate = new Date(); // Default to now
   if (invoiceDateStr) {
     let parsedDate;
     // Check for YYYY-MM-DD format to avoid timezone parsing issues.
     if (/^\d{4}-\d{2}-\d{2}$/.test(invoiceDateStr)) {
+<<<<<<< HEAD
       const [year, month, day] = invoiceDateStr.split('-').map(Number);
       parsedDate = new Date(Date.UTC(year, month - 1, day));
     } else {
       // Fallback for other ISO-like formats that new Date() can handle.
       parsedDate = new Date(invoiceDateStr);
+=======
+        const [year, month, day] = invoiceDateStr.split('-').map(Number);
+        parsedDate = new Date(Date.UTC(year, month - 1, day));
+    } else {
+        // Fallback for other ISO-like formats that new Date() can handle.
+        parsedDate = new Date(invoiceDateStr);
+>>>>>>> emailReader
     }
 
     if (parsedDate && !isNaN(parsedDate.getTime())) {

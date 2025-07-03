@@ -5,7 +5,12 @@ import { initializeDatabase } from '@/lib/database';
 export async function GET() {
   try {
     await initializeDatabase();
+<<<<<<< HEAD
     const config = (await client.execute('SELECT * FROM invoice_config LIMIT 1')).rows;
+=======
+    const result = await client.execute('SELECT * FROM invoice_config LIMIT 1');
+    const config = result.rows[0] || null;
+>>>>>>> emailReader
     return NextResponse.json({ config });
   } catch (error) {
     console.error('Error fetching invoice config:', error);
@@ -19,6 +24,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await initializeDatabase();
+<<<<<<< HEAD
 
     const { starting_number, current_number } = await request.json();
     const result = await client.execute('SELECT id FROM invoice_config LIMIT 1');
@@ -31,12 +37,29 @@ export async function POST(request: NextRequest) {
       });
     }
     else {
+=======
+    
+    const { starting_number, current_number } = await request.json();
+
+    const existing = await client.execute('SELECT id FROM invoice_config LIMIT 1');
+    
+    if (existing.rows.length > 0) {
+      await client.execute({
+        sql: 'UPDATE invoice_config SET starting_number = ?, current_number = ? WHERE id = ?',
+        args: [starting_number, current_number, existing.rows[0].id]
+      });
+    } else {
+>>>>>>> emailReader
       await client.execute({
         sql: 'INSERT INTO invoice_config (starting_number, current_number) VALUES (?, ?)',
         args: [starting_number, current_number]
       });
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> emailReader
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating invoice config:', error);

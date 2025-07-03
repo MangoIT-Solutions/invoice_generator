@@ -8,7 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreditCard, Save } from 'lucide-react';
 import { toast } from 'sonner';
+<<<<<<< HEAD
 import router from 'next/router';
+=======
+>>>>>>> emailReader
 
 export default function BankDetails() {
   const [isLoading, setIsLoading] = useState(false);

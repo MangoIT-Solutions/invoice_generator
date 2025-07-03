@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+<<<<<<< HEAD
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   },
+=======
+>>>>>>> emailReader
   // output: 'export', // Commented out to allow dynamic API routes
   eslint: {
     ignoreDuringBuilds: true,

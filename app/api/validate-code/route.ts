@@ -24,7 +24,11 @@ export async function GET(request: Request) {
         const inputCode = code.trim().toUpperCase();
         let closest = null;
         let minDist = 3; // Only suggest if <=2 edits away
+<<<<<<< HEAD
         for (const row of allRows as { project_code: string }[]) {
+=======
+        for (const row of allRows) {
+>>>>>>> emailReader
             const dbCode = row.project_code.toUpperCase();
             const dist = levenshtein(inputCode, dbCode);
             if (dist < minDist) {

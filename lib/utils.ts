@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+=======
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+>>>>>>> emailReader
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,6 +21,7 @@ export function cn(...inputs: ClassValue[]) {
  * e.g., new Date('2025-05-01') => "5/1/2025"
  */
 export function formatDateToMDY(date: Date): string {
+<<<<<<< HEAD
     if (!date || isNaN(date.getTime())) {
         return '';
     }
@@ -24,6 +30,16 @@ export function formatDateToMDY(date: Date): string {
     const day = date.getUTCDate();
     const year = date.getUTCFullYear();
     return `${month}/${day}/${year}`;
+=======
+  if (!date || isNaN(date.getTime())) {
+    return "";
+  }
+  // Use UTC methods to avoid timezone issues
+  const month = date.getUTCMonth() + 1; // getUTCMonth() is 0-indexed
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  return `${month}/${day}/${year}`;
+>>>>>>> emailReader
 }
 
 /**
@@ -36,18 +52,34 @@ export function formatDateToMDY(date: Date): string {
  */
 export function formatPeriod(period: string): string {
   if (!period) {
+<<<<<<< HEAD
     return 'N/A';
+=======
+    return "N/A";
+>>>>>>> emailReader
   }
   const trimmedPeriod = period.trim();
 
   // First, check if the period is already in the desired M/D/YYYY format (range or single).
+<<<<<<< HEAD
   if (/^(\d{1,2}\/\d{1,2}\/\d{4})( - \d{1,2}\/\d{1,2}\/\d{4})?$/.test(trimmedPeriod)) {
+=======
+  if (
+    /^(\d{1,2}\/\d{1,2}\/\d{4})( - \d{1,2}\/\d{1,2}\/\d{4})?$/.test(
+      trimmedPeriod
+    )
+  ) {
+>>>>>>> emailReader
     return trimmedPeriod;
   }
 
   // Case 1: Handle month strings, e.g., "2025-05"
   if (/^\d{4}-\d{2}$/.test(trimmedPeriod)) {
+<<<<<<< HEAD
     const [year, month] = trimmedPeriod.split('-').map(Number);
+=======
+    const [year, month] = trimmedPeriod.split("-").map(Number);
+>>>>>>> emailReader
     if (year > 1000 && month >= 1 && month <= 12) {
       const startDate = new Date(Date.UTC(year, month - 1, 1));
       const endDate = new Date(Date.UTC(year, month, 0));
@@ -60,11 +92,23 @@ export function formatPeriod(period: string): string {
   if (separator.test(trimmedPeriod)) {
     const parts = trimmedPeriod.split(separator);
     // Ensure it's a range of two YYYY-MM-DD dates.
+<<<<<<< HEAD
     if (parts.length === 2 && /^\d{4}-\d{2}-\d{2}$/.test(parts[0].trim()) && /^\d{4}-\d{2}-\d{2}$/.test(parts[1].trim())) {
       try {
         const startDate = new Date(parts[0].trim() + 'T00:00:00Z');
         const endDate = new Date(parts[1].trim() + 'T00:00:00Z');
         
+=======
+    if (
+      parts.length === 2 &&
+      /^\d{4}-\d{2}-\d{2}$/.test(parts[0].trim()) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(parts[1].trim())
+    ) {
+      try {
+        const startDate = new Date(parts[0].trim() + "T00:00:00Z");
+        const endDate = new Date(parts[1].trim() + "T00:00:00Z");
+
+>>>>>>> emailReader
         const formattedStart = formatDateToMDY(startDate);
         const formattedEnd = formatDateToMDY(endDate);
 
@@ -72,7 +116,11 @@ export function formatPeriod(period: string): string {
           return `${formattedStart} - ${formattedEnd}`;
         }
       } catch (error) {
+<<<<<<< HEAD
         console.error('Error parsing period date range:', error);
+=======
+        console.error("Error parsing period date range:", error);
+>>>>>>> emailReader
       }
     }
   }
@@ -80,15 +128,29 @@ export function formatPeriod(period: string): string {
   // Case 3: Handle single YYYY-MM-DD date
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedPeriod)) {
     try {
+<<<<<<< HEAD
         const date = new Date(trimmedPeriod + 'T00:00:00Z');
         if (!isNaN(date.getTime())) {
             return formatDateToMDY(date);
         }
     } catch (error) {
         console.error('Error parsing single period date:', error);
+=======
+      const date = new Date(trimmedPeriod + "T00:00:00Z");
+      if (!isNaN(date.getTime())) {
+        return formatDateToMDY(date);
+      }
+    } catch (error) {
+      console.error("Error parsing single period date:", error);
+>>>>>>> emailReader
     }
   }
 
   // If the format is not recognized or parsing failed, return the original string.
   return trimmedPeriod;
 }
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> emailReader

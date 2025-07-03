@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,6 +17,38 @@ import { FileText, Plus, Trash2, Save, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProjectDetails } from '@/lib/database';
 import { useRouter } from 'next/navigation';
+=======
+"use client";
+
+import { useState, useEffect } from "react";
+import { useAuth } from "@/app/context/AuthContext";
+import { DateRange } from "react-day-picker";
+import { startOfMonth, endOfMonth } from "date-fns";
+import DateRangePicker from "@/components/ui/date-range-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FileText, Plus, Trash2, Save, Send } from "lucide-react";
+import { toast } from "sonner";
+import { ProjectDetails } from "@/lib/database";
+import { useRouter } from "next/navigation";
+>>>>>>> emailReader
 
 interface InvoiceItem {
   description: string;
@@ -32,6 +65,7 @@ export default function GenerateInvoice() {
   const today = new Date();
   const defaultFrom = startOfMonth(today);
   const defaultTo = endOfMonth(today);
+<<<<<<< HEAD
   const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: defaultFrom, to: defaultTo });
   const [formData, setFormData] = useState({
     user_id: user?.id?.toString() || '',
@@ -47,17 +81,47 @@ export default function GenerateInvoice() {
 
   const [items, setItems] = useState<InvoiceItem[]>([
     { description: '', base_rate: 0, unit: 1, amount: 0 }
+=======
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: defaultFrom,
+    to: defaultTo,
+  });
+  const [formData, setFormData] = useState({
+    user_id: user?.id?.toString() || "",
+    client_name: "",
+    client_company_name: "",
+    client_address: "",
+    client_email: "",
+    invoice_date: new Date().toISOString().split("T")[0],
+    period: `${defaultFrom.toLocaleDateString()} - ${defaultTo.toLocaleDateString()}`,
+    term: "",
+    project_code: "",
+  });
+
+  const [items, setItems] = useState<InvoiceItem[]>([
+    { description: "", base_rate: 0, unit: 1, amount: 0 },
+>>>>>>> emailReader
   ]);
 
   const [projects, setProjects] = useState<ProjectDetails[]>([]);
 
   // Add local state for placeholder visibility
+<<<<<<< HEAD
   const [placeholderStates, setPlaceholderStates] = useState<{ [key: string]: boolean }>({});
+=======
+  const [placeholderStates, setPlaceholderStates] = useState<{
+    [key: string]: boolean;
+  }>({});
+>>>>>>> emailReader
 
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
+<<<<<<< HEAD
       period: `${defaultFrom.toLocaleDateString()} - ${defaultTo.toLocaleDateString()}`
+=======
+      period: `${defaultFrom.toLocaleDateString()} - ${defaultTo.toLocaleDateString()}`,
+>>>>>>> emailReader
     }));
     // eslint-disable-next-line
   }, []);
@@ -65,7 +129,11 @@ export default function GenerateInvoice() {
   useEffect(() => {
     async function loadProjects() {
       try {
+<<<<<<< HEAD
         const res = await fetch('/api/projects');
+=======
+        const res = await fetch("/api/projects");
+>>>>>>> emailReader
         if (res.ok) {
           const data = await res.json();
           setProjects(data.projects);
@@ -78,20 +146,38 @@ export default function GenerateInvoice() {
   }, []);
 
   const addItem = () => {
+<<<<<<< HEAD
     setItems([...items, { description: '', base_rate: 0, unit: 1, amount: 0 }]);
+=======
+    setItems([...items, { description: "", base_rate: 0, unit: 1, amount: 0 }]);
+>>>>>>> emailReader
   };
 
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
   };
 
+<<<<<<< HEAD
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
+=======
+  const updateItem = (
+    index: number,
+    field: keyof InvoiceItem,
+    value: string | number
+  ) => {
+>>>>>>> emailReader
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
 
     // Calculate amount when base_rate or unit changes
+<<<<<<< HEAD
     if (field === 'base_rate' || field === 'unit') {
       updatedItems[index].amount = updatedItems[index].base_rate * updatedItems[index].unit;
+=======
+    if (field === "base_rate" || field === "unit") {
+      updatedItems[index].amount =
+        updatedItems[index].base_rate * updatedItems[index].unit;
+>>>>>>> emailReader
     }
 
     setItems(updatedItems);
@@ -112,7 +198,11 @@ export default function GenerateInvoice() {
     if (range?.from && range?.to) {
       setFormData({
         ...formData,
+<<<<<<< HEAD
         period: `${range.from.toLocaleDateString()} - ${range.to.toLocaleDateString()}`
+=======
+        period: `${range.from.toLocaleDateString()} - ${range.to.toLocaleDateString()}`,
+>>>>>>> emailReader
       });
     }
   };
@@ -120,7 +210,11 @@ export default function GenerateInvoice() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.user_id) {
+<<<<<<< HEAD
       toast.error('Please select a user');
+=======
+      toast.error("Please select a user");
+>>>>>>> emailReader
       return;
     }
 
@@ -133,6 +227,7 @@ export default function GenerateInvoice() {
         subtotal: calculateSubtotal(),
         payment_charges: includePaymentCharges ? 35 : 0,
         total: calculateTotal(),
+<<<<<<< HEAD
         items: items.filter(item => item.description.trim() !== ''),
         status: 'draft'
       };
@@ -141,6 +236,16 @@ export default function GenerateInvoice() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+=======
+        items: items.filter((item) => item.description.trim() !== ""),
+        status: "draft",
+      };
+
+      const response = await fetch("/api/invoices", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+>>>>>>> emailReader
         },
         body: JSON.stringify(invoiceData),
       });
@@ -148,6 +253,7 @@ export default function GenerateInvoice() {
       const data = await response.json();
 
       if (response.ok && data.invoiceId) {
+<<<<<<< HEAD
         toast.success('Invoice generated successfully');
         router.push(`/invoice/${data.invoiceId}`);
         return;
@@ -156,6 +262,16 @@ export default function GenerateInvoice() {
       }
     } catch (error) {
       toast.error('Network error occurred');
+=======
+        toast.success("Invoice generated successfully");
+        router.push(`/invoice/${data.invoiceId}`);
+        return;
+      } else {
+        toast.error(data.error || "Failed to generate invoice");
+      }
+    } catch (error) {
+      toast.error("Network error occurred");
+>>>>>>> emailReader
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +302,7 @@ export default function GenerateInvoice() {
               <Select
                 value={formData.project_code}
                 onValueChange={(value) => {
+<<<<<<< HEAD
                   const selected = projects.find(p => p.project_code === value);
                   setFormData({
                     ...formData,
@@ -194,6 +311,18 @@ export default function GenerateInvoice() {
                     client_company_name: selected?.company_name || '',
                     client_address: selected?.address || '',
                     client_email: selected?.client_email || ''
+=======
+                  const selected = projects.find(
+                    (p) => p.project_code === value
+                  );
+                  setFormData({
+                    ...formData,
+                    project_code: value,
+                    client_name: selected?.client_name || "",
+                    client_company_name: selected?.company_name || "",
+                    client_address: selected?.address || "",
+                    client_email: selected?.client_email || "",
+>>>>>>> emailReader
                   });
                 }}
               >
@@ -202,7 +331,14 @@ export default function GenerateInvoice() {
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((project) => (
+<<<<<<< HEAD
                     <SelectItem key={project.project_id} value={project.project_code}>
+=======
+                    <SelectItem
+                      key={project.project_id}
+                      value={project.project_code}
+                    >
+>>>>>>> emailReader
                       {project.project_code} - {project.company_name}
                     </SelectItem>
                   ))}
@@ -215,7 +351,13 @@ export default function GenerateInvoice() {
                 <Input
                   id="client_name"
                   value={formData.client_name}
+<<<<<<< HEAD
                   onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+=======
+                  onChange={(e) =>
+                    setFormData({ ...formData, client_name: e.target.value })
+                  }
+>>>>>>> emailReader
                   required
                 />
               </div>
@@ -225,7 +367,13 @@ export default function GenerateInvoice() {
                   id="client_email"
                   type="email"
                   value={formData.client_email}
+<<<<<<< HEAD
                   onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+=======
+                  onChange={(e) =>
+                    setFormData({ ...formData, client_email: e.target.value })
+                  }
+>>>>>>> emailReader
                   required
                 />
               </div>
@@ -236,7 +384,13 @@ export default function GenerateInvoice() {
               <Textarea
                 id="client_address"
                 value={formData.client_address}
+<<<<<<< HEAD
                 onChange={(e) => setFormData({ ...formData, client_address: e.target.value })}
+=======
+                onChange={(e) =>
+                  setFormData({ ...formData, client_address: e.target.value })
+                }
+>>>>>>> emailReader
                 rows={3}
                 required
               />
@@ -250,7 +404,13 @@ export default function GenerateInvoice() {
                   id="invoice_date"
                   type="date"
                   value={formData.invoice_date}
+<<<<<<< HEAD
                   onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
+=======
+                  onChange={(e) =>
+                    setFormData({ ...formData, invoice_date: e.target.value })
+                  }
+>>>>>>> emailReader
                   required
                 />
               </div>
@@ -261,7 +421,10 @@ export default function GenerateInvoice() {
                   onSelect={handleDateRangeChange}
                 />
               </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> emailReader
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -270,7 +433,13 @@ export default function GenerateInvoice() {
                 <Input
                   id="term"
                   value={formData.term}
+<<<<<<< HEAD
                   onChange={(e) => setFormData({ ...formData, term: e.target.value })}
+=======
+                  onChange={(e) =>
+                    setFormData({ ...formData, term: e.target.value })
+                  }
+>>>>>>> emailReader
                   placeholder="e.g., On receipt"
                 />
               </div>
@@ -287,12 +456,25 @@ export default function GenerateInvoice() {
               </div>
 
               {items.map((item, index) => (
+<<<<<<< HEAD
                 <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+=======
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg"
+                >
+>>>>>>> emailReader
                   <div className="md:col-span-2">
                     <Label>Description</Label>
                     <Input
                       value={item.description}
+<<<<<<< HEAD
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
+=======
+                      onChange={(e) =>
+                        updateItem(index, "description", e.target.value)
+                      }
+>>>>>>> emailReader
                       placeholder="Item description"
                       required
                     />
@@ -303,11 +485,39 @@ export default function GenerateInvoice() {
                       type="number"
                       step="0.01"
                       value={item.base_rate}
+<<<<<<< HEAD
                       onChange={(e) => updateItem(index, 'base_rate', parseFloat(e.target.value))}
                       placeholder={placeholderStates[`base_rate_${index}`] === false ? '' : '0.00'}
                       required
                       onFocus={() => setPlaceholderStates(s => ({ ...s, [`base_rate_${index}`]: false }))}
                       onBlur={() => setPlaceholderStates(s => ({ ...s, [`base_rate_${index}`]: true }))}
+=======
+                      onChange={(e) =>
+                        updateItem(
+                          index,
+                          "base_rate",
+                          parseFloat(e.target.value)
+                        )
+                      }
+                      placeholder={
+                        placeholderStates[`base_rate_${index}`] === false
+                          ? ""
+                          : "0.00"
+                      }
+                      required
+                      onFocus={() =>
+                        setPlaceholderStates((s) => ({
+                          ...s,
+                          [`base_rate_${index}`]: false,
+                        }))
+                      }
+                      onBlur={() =>
+                        setPlaceholderStates((s) => ({
+                          ...s,
+                          [`base_rate_${index}`]: true,
+                        }))
+                      }
+>>>>>>> emailReader
                     />
                   </div>
                   <div>
@@ -316,11 +526,37 @@ export default function GenerateInvoice() {
                       type="number"
                       step="1"
                       value={item.unit}
+<<<<<<< HEAD
                       onChange={(e) => updateItem(index, 'unit', parseFloat(e.target.value) || 1)}
                       placeholder={placeholderStates[`unit_${index}`] === false ? '' : '1'}
                       required
                       onFocus={() => setPlaceholderStates(s => ({ ...s, [`unit_${index}`]: false }))}
                       onBlur={() => setPlaceholderStates(s => ({ ...s, [`unit_${index}`]: true }))}
+=======
+                      onChange={(e) =>
+                        updateItem(
+                          index,
+                          "unit",
+                          parseFloat(e.target.value) || 1
+                        )
+                      }
+                      placeholder={
+                        placeholderStates[`unit_${index}`] === false ? "" : "1"
+                      }
+                      required
+                      onFocus={() =>
+                        setPlaceholderStates((s) => ({
+                          ...s,
+                          [`unit_${index}`]: false,
+                        }))
+                      }
+                      onBlur={() =>
+                        setPlaceholderStates((s) => ({
+                          ...s,
+                          [`unit_${index}`]: true,
+                        }))
+                      }
+>>>>>>> emailReader
                     />
                   </div>
                   <div>
@@ -354,7 +590,13 @@ export default function GenerateInvoice() {
               <Checkbox
                 id="payment_charges"
                 checked={includePaymentCharges}
+<<<<<<< HEAD
                 onCheckedChange={checked => setIncludePaymentCharges(checked === true)}
+=======
+                onCheckedChange={(checked) =>
+                  setIncludePaymentCharges(checked === true)
+                }
+>>>>>>> emailReader
               />
               <Label htmlFor="payment_charges">
                 Include Payment Transfer Charges ($35.00)
@@ -365,7 +607,13 @@ export default function GenerateInvoice() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <span>Subtotal:</span>
+<<<<<<< HEAD
                 <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
+=======
+                <span className="font-medium">
+                  ${calculateSubtotal().toFixed(2)}
+                </span>
+>>>>>>> emailReader
               </div>
               {includePaymentCharges && (
                 <div className="flex justify-between items-center mb-2">
@@ -400,4 +648,11 @@ export default function GenerateInvoice() {
       </Card>
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+
+
+
+>>>>>>> emailReader

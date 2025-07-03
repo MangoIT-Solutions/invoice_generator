@@ -26,7 +26,11 @@ export async function generateInvoicePdf(
 ): Promise<string> {
   const pdfDir = path.join(process.cwd(), 'public', 'invoices');
   const pdfPath = path.join(pdfDir, pdfFileName);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> emailReader
   // Ensure the invoices directory exists
   mkdirSync(pdfDir, { recursive: true });
 
@@ -45,8 +49,13 @@ export async function generateInvoicePdf(
       payment_charges: invoiceData.payment_charges || 0,
       total: invoiceData.total || 0,
       status: invoiceData.status || 'draft',
+<<<<<<< HEAD
       user_id: invoiceData.user_id ?? '', // Ensure user_id is present
       created_at: invoiceData.created_at ?? new Date().toISOString() // Ensure created_at is present
+=======
+      user_id: invoiceData.user_id ?? 1, // Provide a default or fetch as needed
+      created_at: invoiceData.created_at ?? new Date().toISOString(), // Provide a default or fetch as needed
+>>>>>>> emailReader
     },
     invoiceData.items || [],
     company,
@@ -60,6 +69,7 @@ export async function generateInvoicePdf(
 
   try {
     const page = await browser.newPage();
+<<<<<<< HEAD
 
     // Set content and wait for any resources to load
     await page.setContent(htmlContent, {
@@ -67,6 +77,15 @@ export async function generateInvoicePdf(
       timeout: 30000 // 30 seconds timeout
     });
 
+=======
+    
+    // Set content and wait for any resources to load
+    await page.setContent(htmlContent, { 
+      waitUntil: 'networkidle0',
+      timeout: 30000 // 30 seconds timeout
+    });
+    
+>>>>>>> emailReader
     // Emulate screen media type for better rendering
     await page.emulateMediaType('screen');
 
@@ -81,7 +100,11 @@ export async function generateInvoicePdf(
 
     // Save the PDF file
     writeFileSync(pdfPath, pdfBuffer);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> emailReader
     return pdfPath;
   } catch (error) {
     console.error('Error generating PDF:', error);
