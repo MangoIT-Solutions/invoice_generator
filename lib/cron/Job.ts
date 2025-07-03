@@ -1,9 +1,9 @@
-// lib/cron.ts
 import cron from "node-cron";
 import axios from "axios";
 
 export function startCronJob() {
-  // Run every 5 minutes
+  console.log("Cron job initialized and waiting for the first run...");
+
   cron.schedule("*/5 * * * *", async () => {
     try {
       console.log("Running email fetch cron job...");
@@ -14,3 +14,5 @@ export function startCronJob() {
     }
   });
 }
+
+startCronJob(); 

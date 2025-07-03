@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseEmailsFromGmail } from "@/lib/parseEmailToInvoice";
+import { parseEmailsFromGmail } from "@/lib/utilsServer";
 import { sendInvoiceToApi } from "@/lib/sendInvoiceToApi";
 import { sendInvoiceByGmail } from "@/lib/sendInvoiceByGmail";
 import path from "path";
@@ -15,16 +15,12 @@ export async function GET() {
       const res = await sendInvoiceToApi(invoice.payload);
 
       // 2. Extract invoice ID safely
-
-      const invoiceId = res?.data?.invoiceId || res?.data?.id; 
+      const invoiceId = res?.data?.invoiceId || res?.data?.id;
       const invoiceNumber = res?.data?.invoiceNumber;
 
       if (!invoiceId) throw new Error("Invoice ID missing after save");
 
-      console.log("Saved Invoice Response:", res);
-      console.log("Resolved Invoice ID:", invoiceId);
-
-      // 3. Path to the generated PDF in public/invoices/
+      // 3. Path to the generated PDF
       const pdfPath = path.join(
         process.cwd(),
         "public",
@@ -32,18 +28,30 @@ export async function GET() {
         `invoice-${invoiceNumber}.pdf`
       );
 
-      // 4. Send email with attached PDF to original sender
+      // 4. Email content
+      const subject = `📄 Your Invoice #${invoiceNumber} from Mango IT Solutions`;
+
+      const textBody = `Invoice #${invoiceNumber} attached.\nTotal: ₹${invoice.payload.total_amount}`;
+
+      // 5. Send formatted email with PDF
       await sendInvoiceByGmail(
         invoice.payload.client_email,
-        `Invoice #${invoiceId}`,
-        "Please find your invoice attached.",
+        subject,
+        textBody,
         pdfPath
       );
+      console.log("📧 Sending invoice to:", invoice.payload.client_email);
+      console.log("🧾 Invoice payload:", invoice.payload);
 
-      // 5. Push response result
-      results.push({ invoiceId, email: invoice.payload.client_email });
+      // 6. Add to result
+      results.push({
+        invoiceId,
+        invoiceNumber,
+        email: invoice.payload.client_email,
+        client: invoice.payload.client_name,
+      });
 
-      // 6. Mark email as read
+      // 7. Mark email as read
       await gmail.users.messages.modify({
         userId: "me",
         id: invoice.id,

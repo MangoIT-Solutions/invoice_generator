@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cron": "ts-node lib/cron/Job.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -78,7 +79,6 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "3.3.3",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "5.2.2",
     "vaul": "^0.9.9",
     "zod": "^3.23.8"
   },
@@ -87,7 +87,9 @@
     "@types/better-sqlite3": "^7.6.8",
     "@types/jsdom": "^21.1.7",
     "@types/mailparser": "^3.4.6",
-    "@types/nodemailer": "^6.4.17"
+    "@types/nodemailer": "^6.4.17",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "resolutions": {
     "rimraf": ">=4.0.0",

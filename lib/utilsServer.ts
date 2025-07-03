@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { simpleParser } from "mailparser";
-import { getRefreshToken, getAutomateUser } from "@/lib/database"; 
+import { getRefreshToken, getAutomateUser } from "@/lib/database";
 import { parseInvoiceFromText } from "@/lib/parseInvoiceText";
 
 export async function parseEmailsFromGmail() {
@@ -38,16 +38,12 @@ export async function parseEmailsFromGmail() {
       format: "raw",
     });
 
-    const parsed = await simpleParser(Buffer.from(rawMsg.data.raw!, "base64"));
-    const senderEmail = parsed.from?.text || "";
-    const bodyText = parsed.text || "";
-
     try {
       const invoicePayload = await parseInvoiceFromText(
-        bodyText,
-        senderEmail,
-        userId // using dynamic user ID
+        rawMsg.data.raw!,
+        userId
       );
+
       parsedInvoices.push({ id: message.id, payload: invoicePayload });
     } catch (error) {
       console.warn(
@@ -58,4 +54,15 @@ export async function parseEmailsFromGmail() {
   }
 
   return { gmail, parsedInvoices };
+}
+
+export async function extractSenderAndBody(rawBase64: string): Promise<{
+  senderEmail: string;
+  bodyText: string;
+}> {
+  const parsed = await simpleParser(Buffer.from(rawBase64, "base64"));
+  const senderEmail = parsed.from?.text || "";
+  const bodyText = parsed.text || "";
+
+  return { senderEmail, bodyText };
 }

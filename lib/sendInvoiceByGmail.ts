@@ -24,16 +24,35 @@ export async function sendInvoiceByGmail(
 
   const pdfBuffer = await fs.readFile(pdfPath);
 
-  // Correctly build MIME message
+  // Build a nice HTML message
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; color: #333;">
+      <h4>Dear Customer,</h4>
+      <p>Thank you for your business. Please find your invoice attached as a PDF.</p>
+      <p>If you have any questions, feel free to reply to this email.</p>
+      <p style="margin-top: 30px;">Warm regards,<br><strong>The InvoiceBot Team</strong></p>
+    </div>
+  `;
+
+  //  Create MIME message
   const message = createMimeMessage();
   message.setSender("me");
   message.setRecipient(to);
   message.setSubject(subject);
+
+  // Add plain text (fallback)
   message.addMessage({
     contentType: "text/plain",
     data: text,
   });
 
+  // Add HTML version
+  message.addMessage({
+    contentType: "text/html",
+    data: htmlBody,
+  });
+
+  // Add PDF attachment
   message.addAttachment({
     filename: path.basename(pdfPath),
     contentType: "application/pdf",
@@ -41,6 +60,7 @@ export async function sendInvoiceByGmail(
     encoding: "base64",
   });
 
+  // Gmail wants base64url-encoded raw string
   const encodedMessage = Buffer.from(message.asRaw())
     .toString("base64")
     .replace(/\+/g, "-")

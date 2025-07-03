@@ -60,6 +60,7 @@ export interface Invoice {
   status: "draft" | "sent" | "paid";
   created_at: string;
   client_company_name?: string;
+  type: string;
 }
 
 export interface InvoiceItem {

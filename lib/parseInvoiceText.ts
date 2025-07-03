@@ -1,85 +1,85 @@
+import { extractSenderAndBody } from "./utilsServer";
+
 export async function parseInvoiceFromText(
-  emailText: string,
-  senderEmail: string,
+  rawBase64Data: string,
   userId: number
 ) {
-  const lines = emailText
+  const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
+
+  const lines = bodyText
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  console.log("Automate User ID:", userId);
-
   const payload: any = {
     user_id: userId,
     client_name: "",
-    client_company_name: "",
     client_address: "",
-    client_email: senderEmail || "",
+    client_email: senderEmail,
     invoice_date: new Date().toISOString().split("T")[0],
-    period: "",
+    Date_range: "",
     term: "",
     project_code: "",
     payment_charges: 0,
     items: [],
   };
 
+  const getValue = (str: string): string => {
+    const parts = str.split(":");
+    if (parts.length < 2) return "";
+    return parts.slice(1).join(":").trim();
+  };
+
+  let isItemSection = false;
+
   for (const line of lines) {
     const lower = line.toLowerCase();
 
-    const getValue = (str: string): string => {
-      const parts = str.split(":");
-      if (parts.length < 2) return "";
-      return parts.slice(1).join(":").trim(); // in case there's ":" in value
-    };
-
     if (lower.startsWith("client name:")) {
-      const value = getValue(line);
-      if (value) payload.client_name = value;
-    } else if (lower.startsWith("client company name:")) {
-      const value = getValue(line);
-      if (value) payload.client_company_name = value;
+      payload.client_name = getValue(line);
     } else if (lower.startsWith("client address:")) {
-      const value = getValue(line);
-      if (value) payload.client_address = value;
+      payload.client_address = getValue(line);
     } else if (lower.startsWith("client email:")) {
-      const value = getValue(line);
-      if (value) payload.client_email = value;
+      payload.client_email = getValue(line);
     } else if (lower.startsWith("invoice date:")) {
-      const value = getValue(line);
-      if (value) payload.invoice_date = value;
-    } else if (lower.startsWith("period:")) {
-      const value = getValue(line);
-      if (value) payload.period = value;
-    } else if (lower.startsWith("term:")) {
-      const value = getValue(line);
-      if (value) payload.term = value;
+      payload.invoice_date = getValue(line);
     } else if (lower.startsWith("project code:")) {
-      const value = getValue(line);
-      if (value) payload.project_code = value;
-    } else if (lower.startsWith("payment charges:")) {
-      const value = getValue(line);
-      const charge = Number(value);
-      if (!isNaN(charge) && charge >= 0) payload.payment_charges = charge;
-    } else if (lower.startsWith("item:")) {
-      const match = line.match(/item:\s*(.*?)\s*\|\s*(\d+)\s*\|\s*([\d.]+)/i);
-      if (match) {
-        const [, desc, unit, rate] = match;
-        const unitNum = Number(unit);
-        const rateNum = Number(rate);
-        if (desc && unitNum > 0 && rateNum > 0) {
-          payload.items.push({
-            description: desc.trim(),
-            unit: unitNum,
-            base_rate: rateNum,
-            amount: unitNum * rateNum,
-          });
+      payload.project_code = getValue(line);
+    } else if (lower.startsWith("term:")) {
+      payload.term = getValue(line);
+    } else if (lower.startsWith("date range:")) {
+      payload.Date_range = getValue(line);
+    } else if (lower.startsWith("include transfer charges:")) {
+      const val = getValue(line).toLowerCase();
+      if (val === "yes") payload.payment_charges = 35;
+    } else if (lower.startsWith("items:")) {
+      isItemSection = true;
+    } else if (isItemSection && lower.startsWith("- description:")) {
+      // - Description: Website Design, Base Rate: 100.00, Unit: 5.5, Amount: 550.00
+      const descMatch = line.match(/description:\s*(.*?),/i);
+      const rateMatch = line.match(/base rate:\s*([\d.]+)/i);
+      const unitMatch = line.match(/unit:\s*([\d.]+)/i);
+      const amountMatch = line.match(/amount:\s*([\d.]+)/i);
+
+      if (descMatch && rateMatch && unitMatch && amountMatch) {
+        const description = descMatch[1].trim();
+        const base_rate = parseFloat(rateMatch[1]);
+        const unit = parseFloat(unitMatch[1]);
+        const amount = parseFloat(amountMatch[1]);
+
+        if (
+          description &&
+          !isNaN(base_rate) &&
+          !isNaN(unit) &&
+          !isNaN(amount)
+        ) {
+          payload.items.push({ description, base_rate, unit, amount });
         }
       }
     }
   }
 
-  // Required field validation
+  // Validate required fields
   const requiredFields = [
     "client_name",
     "client_address",
@@ -87,7 +87,8 @@ export async function parseInvoiceFromText(
     "invoice_date",
     "term",
     "project_code",
-    "period",
+    "Date_range",
+    "payment_charges",
   ];
 
   for (const field of requiredFields) {
