@@ -23,6 +23,7 @@ export interface User {
 }
 
 export interface Company {
+  company_logo: string;
   id: number;
   name: string;
   logo?: string;
@@ -41,6 +42,7 @@ export interface InvoiceConfig {
 }
 
 export interface Invoice {
+  additional_charge: number;
   id: number;
   invoice_number: string;
   user_id: number;

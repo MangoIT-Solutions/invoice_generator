@@ -6,12 +6,12 @@ import path from 'path';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
 
 export async function GET(
-  request: NextRequest, 
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: number }> }
 ) {
   try {
     await initializeDatabase();
-    const invoiceId = Number(params.id);
+    const invoiceId = Number(await params);
     const pdfDir = path.join(process.cwd(), 'public', 'invoices');
     const pdfPath = path.join(pdfDir, `invoice-${invoiceId}.pdf`);
 
@@ -24,7 +24,7 @@ export async function GET(
 
       const company = await getCompanyConfig();
       const bank = await getBankDetails();
-      
+
       // Combine invoice and items into a single object for the PDF generator
       const invoiceWithItems = {
         ...invoiceData.invoice,

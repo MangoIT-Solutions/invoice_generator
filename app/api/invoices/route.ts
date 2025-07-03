@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!company || !bank) {
-        return NextResponse.json({ error: 'Server configuration for company or bank is missing.' }, { status: 500 });
+      return NextResponse.json({ error: 'Server configuration for company or bank is missing.' }, { status: 500 });
     }
 
     try {
@@ -89,9 +89,9 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE /api/invoices/[id]
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
-    const id = Number(params.id);
+    const id = Number(await params);
     await client.execute({
       sql: 'DELETE FROM invoices WHERE id = ?',
       args: [id],
