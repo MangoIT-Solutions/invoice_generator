@@ -26,7 +26,7 @@ export async function generateInvoicePdf(
 ): Promise<string> {
   const pdfDir = path.join(process.cwd(), 'public', 'invoices');
   const pdfPath = path.join(pdfDir, pdfFileName);
-  
+
   // Ensure the invoices directory exists
   mkdirSync(pdfDir, { recursive: true });
 
@@ -44,7 +44,9 @@ export async function generateInvoicePdf(
       subtotal: invoiceData.subtotal || 0,
       payment_charges: invoiceData.payment_charges || 0,
       total: invoiceData.total || 0,
-      status: invoiceData.status || 'draft'
+      status: invoiceData.status || 'draft',
+      user_id: invoiceData.user_id ?? '', // Ensure user_id is present
+      created_at: invoiceData.created_at ?? new Date().toISOString() // Ensure created_at is present
     },
     invoiceData.items || [],
     company,
@@ -58,13 +60,13 @@ export async function generateInvoicePdf(
 
   try {
     const page = await browser.newPage();
-    
+
     // Set content and wait for any resources to load
-    await page.setContent(htmlContent, { 
+    await page.setContent(htmlContent, {
       waitUntil: 'networkidle0',
       timeout: 30000 // 30 seconds timeout
     });
-    
+
     // Emulate screen media type for better rendering
     await page.emulateMediaType('screen');
 
@@ -79,7 +81,7 @@ export async function generateInvoicePdf(
 
     // Save the PDF file
     writeFileSync(pdfPath, pdfBuffer);
-    
+
     return pdfPath;
   } catch (error) {
     console.error('Error generating PDF:', error);

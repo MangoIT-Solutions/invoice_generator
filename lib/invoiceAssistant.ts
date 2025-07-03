@@ -19,7 +19,7 @@ export interface InvoiceDetails {
   discount?: number;
 }
 
-export type AssistantState = 
+export type AssistantState =
   | { step: 'gather_details', collected: Partial<InvoiceDetails> }
   | { step: 'confirm_details', invoice: InvoiceDetails }
   | { step: 'collect_email', invoice: InvoiceDetails }
@@ -41,8 +41,8 @@ export class InvoiceAssistant {
       } else if (this.state.step === 'collect_email') {
         return await this.handleCollectEmail(message);
       }
-      
-      return { 
+
+      return {
         reply: "I'm not sure what to do next. Let's start over.",
         state: { step: 'gather_details', collected: {} }
       };
@@ -56,16 +56,24 @@ export class InvoiceAssistant {
   }
 
   private async handleGatherDetails(message: string) {
+    if (this.state.step !== 'gather_details') {
+      throw new Error("Invalid state: handleGatherDetails called when not gathering details.");
+    }
     const current = this.state.collected;
     const parsed = await parseWithLLM(message);
-    
+
     // Update collected data with parsed information
     const updated: Partial<InvoiceDetails> = {
       ...current,
       ...(parsed.projectCode && { projectCode: parsed.projectCode }),
       ...(parsed.clientName && { clientName: parsed.clientName }),
       ...(parsed.period && { period: parsed.period }),
-      ...(parsed.items && { items: parsed.items })
+      ...(parsed.items && {
+        items: parsed.items.map((item: any) => ({
+          ...item,
+          amount: typeof item.amount === "number" ? item.amount : (item.quantity && item.rate ? item.quantity * item.rate : 0)
+        }))
+      })
     };
 
     // Check if we have all required information
@@ -81,7 +89,7 @@ export class InvoiceAssistant {
     // Ask for missing information
     const missing = this.getMissingInfo(updated);
     this.state = { step: 'gather_details', collected: updated };
-    
+
     return {
       reply: `I need a bit more information to create your invoice. Could you please provide: ${missing.join(', ')}?`,
       state: this.state
@@ -91,19 +99,22 @@ export class InvoiceAssistant {
   private async handleConfirmDetails(message: string) {
     const lowerMsg = message.toLowerCase().trim();
     if (['yes', 'y', 'correct', 'confirm'].includes(lowerMsg)) {
-      this.state = { ...this.state, step: 'collect_email' };
+      const invoice = (this.state as { invoice: InvoiceDetails }).invoice;
+      this.state = { step: 'collect_email', invoice };
       return {
         reply: "Great! Please provide the email address where I should send the invoice:",
         state: this.state
       };
     } else if (['no', 'n', 'change'].some(word => lowerMsg.includes(word))) {
-      this.state = { step: 'gather_details', collected: this.state.invoice };
+      // Extract invoice from state before using it
+      const invoice = (this.state as { invoice: InvoiceDetails }).invoice;
+      this.state = { step: 'gather_details', collected: invoice };
       return {
         reply: "What would you like to change? Please provide the updated information.",
         state: this.state
       };
     }
-    
+
     return {
       reply: "Please confirm if these details are correct (yes/no) or tell me what needs to be changed.",
       state: this.state
@@ -120,8 +131,10 @@ export class InvoiceAssistant {
     }
 
     // In a real app, send the email here
-    console.log(`Sending invoice to ${email}`, this.state.invoice);
-    
+    if (this.state.step === 'collect_email') {
+      console.log(`Sending invoice to ${email}`, this.state.invoice);
+    }
+
     this.state = { step: 'complete' };
     return {
       reply: `✅ Invoice has been sent to ${email}! Is there anything else I can help you with?`,
@@ -161,7 +174,7 @@ export class InvoiceAssistant {
   }
 
   private formatConfirmation(invoice: InvoiceDetails): string {
-    const items = invoice.items.map(item => 
+    const items = invoice.items.map(item =>
       `- ${item.quantity} x ${item.description} @ $${item.rate.toFixed(2)} = $${(item.quantity * item.rate).toFixed(2)}`
     ).join('\n');
 

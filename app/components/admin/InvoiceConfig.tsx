@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import router from 'next/router';
 
 export default function InvoiceConfig() {
   const [isLoading, setIsLoading] = useState(false);

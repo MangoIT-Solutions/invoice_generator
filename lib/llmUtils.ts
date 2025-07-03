@@ -47,13 +47,13 @@ export interface ParsedInvoiceInput {
   transactionCharges?: number;
 }
 
-type WorkLogAction = 
-  | 'log_work' 
-  | 'collect_email' 
-  | 'generate_invoice' 
-  | 'needs_info' 
-  | 'error' 
-  | 'download_invoice' 
+type WorkLogAction =
+  | 'log_work'
+  | 'collect_email'
+  | 'generate_invoice'
+  | 'needs_info'
+  | 'error'
+  | 'download_invoice'
   | 'end_conversation'
   | 'get_invoice_details'
   | 'get_project_code'
@@ -259,24 +259,24 @@ export async function parseWithLLM(input: string): Promise<Partial<ParsedInvoice
     // First try to extract all details including project code (supports various formats like XX-XXX-XXXX, PRJ123, ABC-123, etc.)
     const projectCodeMatch = input.match(/(?:project\s+)?([A-Za-z0-9][A-Za-z0-9-]{2,}(?:\s+[A-Za-z0-9-]+)*)/i);
     let projectCode = projectCodeMatch ? projectCodeMatch[1].trim().toUpperCase() : undefined;
-    
+
     // Extract client name if mentioned
     const clientNameMatch = input.match(/for\s+client\s+([^\n,.]+)/i);
     const clientName = clientNameMatch ? clientNameMatch[1].trim() : undefined;
-    
+
     // Extract period (month/year)
     const periodMatch = input.match(/(?:for|period|month of|in)\s+(?:the\s+)?(?:month of\s+)?(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+(?:\d{4}|'?\d{2}))?/i);
     let period = periodMatch ? periodMatch[0] : undefined;
-    
+
     // Extract transaction charges
     const transactionMatch = input.match(/(?:transaction\s*(?:fee|charge|cost)s?\s*(?:of)?\s*\$?\s*(\d+(?:\.\d{1,2})?)|\$?\s*(\d+(?:\.\d{1,2})?)\s*(?:dollars?|USD)?\s*(?:transaction\s*(?:fee|charge|cost)))/i);
-    const transactionCharges = transactionMatch ? 
+    const transactionCharges = transactionMatch ?
       parseFloat(transactionMatch[1] || transactionMatch[2] || '0') : 0;
-      
+
     // Extract items using the existing extractInvoiceDetails
     const parsed = await extractInvoiceDetails(input);
     console.log('Extracted invoice details:', parsed);
-    
+
     // If we have items but no project code from the initial match, use the one from parsed input
     if ((!projectCode || projectCode === 'GENERAL') && parsed.projectCode) {
       projectCode = parsed.projectCode;
@@ -294,7 +294,7 @@ export async function parseWithLLM(input: string): Promise<Partial<ParsedInvoice
         rate: item.rate || 0
       }))
     };
-    
+
     // If we have a project code but no items, try to extract items from the input
     if (result.projectCode && (!result.items || result.items.length === 0)) {
       const itemMatch = input.match(/(\d+)\s*(?:hours?|hrs?)\s*(?:of\s+)?([^\d$]+?)\s*(?:at\s*\$?\s*(\d+(?:\.\d{1,2})?))?/gi);
@@ -309,7 +309,7 @@ export async function parseWithLLM(input: string): Promise<Partial<ParsedInvoice
         });
       }
     }
-    
+
     return result;
   } catch (error) {
     console.error('Error in parseWithLLM:', error);
@@ -338,24 +338,24 @@ export async function processWorkLog(input: string | ProcessWorkLogInput): Promi
   // Handle input based on its type
   const isStringInput = typeof input === 'string';
   const lowerInput = isStringInput ? input.trim().toLowerCase() : '';
-  
+
   // Check if user wants to end the conversation
-  if ((isStringInput && (lowerInput === 'no' || lowerInput === '3' || lowerInput === 'cancel' || 
-      lowerInput.includes('no thanks') || lowerInput.includes('not now'))) || 
-      (!isStringInput && input.action === 'end_conversation')) {
+  if ((isStringInput && (lowerInput === 'no' || lowerInput === '3' || lowerInput === 'cancel' ||
+    lowerInput.includes('no thanks') || lowerInput.includes('not now'))) ||
+    (!isStringInput && input.action === 'end_conversation')) {
     return {
       action: 'end_conversation',
       data: {},
       message: 'Thank you for using our service. Have a great day!'
     };
   }
-  
+
   // Check for download requests in natural language
-  if (isStringInput && (lowerInput.includes('download') || 
-      lowerInput.includes('get link') || 
-      lowerInput.includes('don\'t send email') ||
-      lowerInput.includes('don\'t want to send') ||
-      lowerInput.includes('just download'))) {
+  if (isStringInput && (lowerInput.includes('download') ||
+    lowerInput.includes('get link') ||
+    lowerInput.includes('don\'t send email') ||
+    lowerInput.includes('don\'t want to send') ||
+    lowerInput.includes('just download'))) {
     return {
       action: 'download_invoice',
       data: {},
@@ -364,10 +364,10 @@ export async function processWorkLog(input: string | ProcessWorkLogInput): Promi
   }
 
   // Handle email collection prompt responses
-  if (isStringInput && input.action === 'collect_email') {
+  if (!isStringInput && input.action === 'collect_email') {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const emailInput = lowerInput.trim();
-    
+    const emailInput = (typeof input.data?.email === 'string' ? input.data.email : '').trim().toLowerCase();
+
     if (emailRegex.test(emailInput)) {
       return {
         action: 'send_email',
@@ -378,17 +378,17 @@ export async function processWorkLog(input: string | ProcessWorkLogInput): Promi
         message: `Invoice has been sent to ${emailInput}! Is there anything else I can help you with?`
       };
     }
-    
+
     // If not a valid email, check if they want to download instead
-    if (emailInput.includes('download') || emailInput.includes('link') || 
-        emailInput.includes('don\'t send') || emailInput.includes('no email')) {
+    if (emailInput.includes('download') || emailInput.includes('link') ||
+      emailInput.includes('don\'t send') || emailInput.includes('no email')) {
       return {
         action: 'download_invoice',
         data: input.data || {},
         message: 'Preparing your invoice for download...'
       };
     }
-    
+
     return {
       action: 'collect_email',
       data: input.data || {},
@@ -399,7 +399,7 @@ export async function processWorkLog(input: string | ProcessWorkLogInput): Promi
   try {
     const currentDate = new Date().toISOString().split('T')[0];
     let parsedInput: Partial<ParsedInvoiceInput> = {};
-    
+
     // Handle command inputs
     if (isStringInput) {
       // Only parse input if it's not a command
@@ -410,7 +410,7 @@ export async function processWorkLog(input: string | ProcessWorkLogInput): Promi
       // Handle email input for invoice
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const emailInput = (typeof input.data?.email === 'string' ? input.data.email : '').trim().toLowerCase();
-      
+
       if (emailRegex.test(emailInput)) {
         return {
           action: 'send_email',
@@ -421,7 +421,7 @@ export async function processWorkLog(input: string | ProcessWorkLogInput): Promi
           message: `Invoice has been sent to ${emailInput}! Is there anything else I can help you with?`
         };
       }
-      
+
       return {
         action: 'collect_email',
         data: input.data || {},
@@ -433,7 +433,7 @@ export async function processWorkLog(input: string | ProcessWorkLogInput): Promi
     if (parsedInput.projectCode && (!parsedInput.items || parsedInput.items.length === 0)) {
       return {
         action: 'get_invoice_details',
-        data: { 
+        data: {
           projectCode: parsedInput.projectCode,
           clientName: parsedInput.clientName || ''
         },

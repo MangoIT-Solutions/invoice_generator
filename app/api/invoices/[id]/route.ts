@@ -3,12 +3,12 @@ import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/lib/inv
 import { initializeDatabase } from '@/lib/database';
 import { client } from '@/lib/database';
 
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
     await initializeDatabase();
 
-    const { id } = context.params;
-    const invoiceData = await getInvoiceWithItems(parseInt(id));
+    const { id } = await params;
+    const invoiceData = await getInvoiceWithItems(id);
 
     if (!invoiceData) {
       return NextResponse.json(
@@ -34,13 +34,13 @@ export async function GET(request: NextRequest, context: { params: { id: string 
   }
 }
 
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
     await initializeDatabase();
-    const { id } = context.params;
+    const { id } = await params;
     await client.execute({
       sql: 'DELETE FROM invoices WHERE id = ?',
-      args: [parseInt(id)],
+      args: [id],
     });
     return NextResponse.json({ success: true });
   } catch (error) {

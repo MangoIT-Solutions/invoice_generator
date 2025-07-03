@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import router from 'next/router';
 
 export default function CompanyConfig() {
   const [isLoading, setIsLoading] = useState(false);
