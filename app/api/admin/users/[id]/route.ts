@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { client } from '@/lib/database';
+// @ts-ignore - bcryptjs has type issues in some versions
 import bcrypt from 'bcryptjs';
 
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: number }> }): Promise<NextResponse> {
   try {
-    const { id } = context.params;
-    const { username, email, password, role } = await request.json();
+    const { id } = await params;
+    const { username, email, password, role } = await req.json();
 
     if (!username || !email) {
       return NextResponse.json(
@@ -44,9 +45,9 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
   }
 }
 
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: number }> }): Promise<NextResponse> {
   try {
-    const { id } = context.params;
+    const { id } = await params;
 
     await client.execute({
       sql: 'DELETE FROM users WHERE id = ? AND role != "admin"',

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useAuth } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import {
   Settings,
   Users,
@@ -12,8 +12,8 @@ import {
   LogOut,
   Menu,
   X,
-  CreditCard,
-} from "lucide-react";
+  CreditCard
+} from 'lucide-react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,11 +21,7 @@ interface AdminLayoutProps {
   onTabChange: (tab: string) => void;
 }
 
-export default function AdminLayout({
-  children,
-  activeTab,
-  onTabChange,
-}: AdminLayoutProps) {
+export default function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -47,12 +43,10 @@ export default function AdminLayout({
 
   // Only show 'User Management' if user is admin, and only show 'Generate Invoice' if user is a regular user
   let filteredMenuItems: typeof menuItems = [];
-  if (user?.role === "admin") {
+  if (user?.role === 'admin') {
     filteredMenuItems = menuItems;
-  } else if (user?.role === "user") {
-    filteredMenuItems = menuItems.filter(
-      (item) => item.id === "generate" || item.id === "invoices"
-    );
+  } else if (user?.role === 'user') {
+    filteredMenuItems = menuItems.filter(item => item.id === 'generate' || item.id === 'invoices');
   }
 
   return (
@@ -68,11 +62,7 @@ export default function AdminLayout({
       )}
 
       {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:inset-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:inset-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
           <Button
@@ -144,12 +134,13 @@ export default function AdminLayout({
             <Menu className="h-5 w-5" />
           </Button>
           <h2 className="text-lg font-semibold text-gray-800">
-            {menuItems.find((item) => item.id === activeTab)?.label ||
-              "Dashboard"}
+            {menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}
           </h2>
         </div>
 
-        <main className="p-6">{children}</main>
+        <main className="p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

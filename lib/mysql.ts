@@ -1,3 +1,4 @@
+
 import mysql from "mysql2/promise";
 
 // MySQL connection configuration

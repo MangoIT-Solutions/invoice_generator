@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  },
   // output: 'export', // Commented out to allow dynamic API routes
   eslint: {
     ignoreDuringBuilds: true,

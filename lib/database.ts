@@ -1,3 +1,4 @@
+
 import mysql from "mysql2/promise";
 import { config } from "dotenv";
 import bcrypt from "bcryptjs";
@@ -10,10 +11,12 @@ const dbConfig = {
   user: process.env.MYSQL_USER || "root",
   password: process.env.MYSQL_PASSWORD || "root",
   database: process.env.MYSQL_DATABASE || "invoice_db",
+
   port: process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT) : 3306,
 };
 
 export const pool = mysql.createPool(dbConfig);
+
 
 // Interfaces
 export interface User {
@@ -21,11 +24,12 @@ export interface User {
   username: string;
   email: string;
   password: string;
-  role: "admin" | "user";
+  role: 'admin' | 'user';
   created_at: string;
 }
 
 export interface Company {
+  company_logo: string;
   id: number;
   name: string;
   logo?: string;
@@ -44,6 +48,7 @@ export interface InvoiceConfig {
 }
 
 export interface Invoice {
+  additional_charge: number;
   id: number;
   invoice_number: string;
   user_id: number;
@@ -94,14 +99,14 @@ export interface BankDetails {
 export interface RecurringInvoice {
   id: number;
   invoice_id: number;
-  next_run: string;
+  next_run: string; // ISO date string YYYY-MM-DD
 }
 
 // Initialize database
 export async function initializeDatabase() {
   const connection = await pool.getConnection();
   try {
-    // Users table
+    // Create users table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -112,8 +117,7 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    // Invoice config table
+    // Create invoice_config table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS invoice_config (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -121,8 +125,7 @@ export async function initializeDatabase() {
         current_number INT NOT NULL
       )
     `);
-
-    // Invoices table
+    // Create invoices table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS invoices (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -143,8 +146,7 @@ export async function initializeDatabase() {
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
-
-    // Invoice items
+    // Create invoice_items table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS invoice_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -156,8 +158,7 @@ export async function initializeDatabase() {
         FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
       )
     `);
-
-    // Projects
+    // Create projects_details table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS projects_details (
         project_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -168,8 +169,7 @@ export async function initializeDatabase() {
         client_email VARCHAR(255) NOT NULL
       )
     `);
-
-    // Bank details
+    // Create bank_details table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS bank_details (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -181,8 +181,7 @@ export async function initializeDatabase() {
         wire_charges VARCHAR(255) DEFAULT 0
       )
     `);
-
-    // Recurring invoices
+    // Create recurring_invoices table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS recurring_invoices (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -237,11 +236,10 @@ export async function initializeDatabase() {
   }
 }
 
-// Project fetch utility
 export async function getAllProjects() {
   const connection = await pool.getConnection();
   try {
-    const [rows] = await connection.query("SELECT * FROM projects_details");
+    const [rows] = await connection.query('SELECT * FROM projects_details');
     return rows as ProjectDetails[];
   } finally {
     connection.release();
@@ -249,22 +247,24 @@ export async function getAllProjects() {
 }
 
 // Generic client utility
+
 export const client = {
   execute: async (query: string | { sql: string; args: any[] }) => {
     const connection = await pool.getConnection();
-    try {
-      if (typeof query === "string") {
+    try { 
+      if (typeof query === 'string') {
         const [rows] = await connection.query(query);
         return { rows };
       } else {
         const [result] = await connection.query(query.sql, query.args);
+        // For INSERT, result.insertId is the new row's id
         const last_row_id = (result as any)?.insertId ?? null;
         return { rows: result, meta: { last_row_id } };
       }
     } finally {
       connection.release();
     }
-  },
+  }
 };
 export async function saveRefreshToken(refreshToken: string) {
   const connection = await pool.getConnection();
@@ -326,3 +326,4 @@ export async function getAutomateUser(): Promise<number> {
     connection.release();
   }
 }
+  
