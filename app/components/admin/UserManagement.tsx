@@ -59,7 +59,6 @@ export default function UserManagement() {
     try {
       const url = editingUser ? `/api/admin/users/${editingUser.id}` : '/api/admin/users';
       const method = editingUser ? 'PUT' : 'POST';
-
       const response = await fetch(url, {
         method,
         headers: {

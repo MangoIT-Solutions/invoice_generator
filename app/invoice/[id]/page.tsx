@@ -58,7 +58,6 @@ export default function InvoiceView() {
       setIsLoading(false);
     }
   };
-
   const generatePDF = async () => {
     try {
       if (!params || !('id' in params) || !params.id) {

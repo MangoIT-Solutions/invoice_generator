@@ -24,7 +24,6 @@ export async function GET(
 
       const company = await getCompanyConfig();
       const bank = await getBankDetails();
-
       // Combine invoice and items into a single object for the PDF generator
       const invoiceWithItems = {
         ...invoiceData.invoice,
@@ -32,7 +31,7 @@ export async function GET(
       };
 
       // Generate the PDF
-      await generateInvoicePdf(
+      await generateInvoicePdf( 
         invoiceWithItems,
         company,
         bank,

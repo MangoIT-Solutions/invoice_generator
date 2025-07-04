@@ -1,24 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/app/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import AdminLayout from '@/app/components/AdminLayout';
-import UserManagement from '@/app/components/admin/UserManagement';
-import CompanyConfig from '@/app/components/admin/CompanyConfig';
-import InvoiceConfig from '@/app/components/admin/InvoiceConfig';
-import GenerateInvoice from '@/app/components/admin/GenerateInvoice';
-import InvoicesGrid from '@/app/components/admin/InvoicesGrid';
-import BankDetails from '@/app/components/admin/BankDetails';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
+import AdminLayout from "@/app/components/AdminLayout";
+import UserManagement from "@/app/components/admin/UserManagement";
+import CompanyConfig from "@/app/components/admin/CompanyConfig";
+import InvoiceConfig from "@/app/components/admin/InvoiceConfig";
+import GenerateInvoice from "@/app/components/admin/GenerateInvoice";
+import InvoicesGrid from "@/app/components/admin/InvoicesGrid";
+import BankDetails from "@/app/components/admin/BankDetails";
+import Authorization from "@/app/components/admin/Authorization";
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState("users");
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/');
+      router.push("/");
     }
   }, [user, isLoading, router]);
 
@@ -36,18 +37,20 @@ export default function AdminDashboard() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'users':
+      case "users":
         return <UserManagement />;
-      case 'company':
+      case "company":
         return <CompanyConfig />;
-      case 'bank':
+      case "bank":
         return <BankDetails />;
-      case 'invoice-config':
+      case "invoice-config":
         return <InvoiceConfig />;
-      case 'generate':
+      case "generate":
         return <GenerateInvoice />;
-      case 'invoices':
+      case "invoices":
         return <InvoicesGrid />;
+      case "authorization":
+        return <Authorization />;
       default:
         return <UserManagement />;
     }

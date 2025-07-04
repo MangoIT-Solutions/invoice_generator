@@ -28,16 +28,17 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
 
   const handleLogout = () => {
     logout();
-    router.push('/');
+    router.push("/");
   };
 
   const menuItems = [
-    { id: 'users', label: 'User Management', icon: Users },
-    { id: 'company', label: 'Company Config', icon: Building2 },
-    { id: 'bank', label: 'Bank Details', icon: CreditCard }, // Restored Bank Details menu item
-    { id: 'invoice-config', label: 'Invoice Config', icon: Settings },
-    { id: 'generate', label: 'Generate Invoice', icon: FileText },
-    { id: 'invoices', label: 'Invoices', icon: FileText }, // New menu item
+    { id: "users", label: "User Management", icon: Users },
+    { id: "company", label: "Company Config", icon: Building2 },
+    { id: "bank", label: "Bank Details", icon: CreditCard }, // Restored Bank Details menu item
+    { id: "invoice-config", label: "Invoice Config", icon: Settings },
+    { id: "generate", label: "Generate Invoice", icon: FileText },
+    { id: "invoices", label: "Invoices", icon: FileText }, // New menu item
+    { id: "authorization", label: "Authorization", icon: Settings }, // New menu item
   ];
 
   // Only show 'User Management' if user is admin, and only show 'Generate Invoice' if user is a regular user
@@ -53,7 +54,10 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setSidebarOpen(false)}
+          />
         </div>
       )}
 
@@ -98,8 +102,12 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
               </span>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-700">{user?.username}</p>
-              <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>
+              <p className="text-sm font-medium text-gray-700">
+                {user?.username}
+              </p>
+              <p className="text-xs text-gray-500">
+                {user?.role === "admin" ? "Administrator" : "User"}
+              </p>
             </div>
           </div>
           <Button
