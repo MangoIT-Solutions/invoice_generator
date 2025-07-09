@@ -12,10 +12,13 @@ export async function parseEmailsFromGmail() {
     process.env.GOOGLE_CLIENT_SECRET!,
     process.env.GOOGLE_REDIRECT_URI!
   );
+  console.log("refreshToken:", refreshToken);
+  // Set the refresh token to the OAuth2 client
   oauth2Client.setCredentials({ refresh_token: refreshToken });
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
+  const accessToken = await oauth2Client.getAccessToken();
+  console.log("Access Token:", accessToken?.token); // Should match curl output
   const response = await gmail.users.messages.list({
     userId: "me",
     q: 'label:invoices is:unread subject:"Invoice Request"',

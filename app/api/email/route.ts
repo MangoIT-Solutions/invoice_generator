@@ -35,7 +35,7 @@ export async function GET() {
 
       // 5. Send formatted email with PDF
       await sendInvoiceByGmail(
-        invoice.payload.client_email,
+        invoice.payload.senderEmail,
         subject,
         textBody,
         pdfPath

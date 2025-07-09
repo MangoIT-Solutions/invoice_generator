@@ -2,12 +2,13 @@
   "name": "nextjs",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "cron": "ts-node lib/cron/Job.ts"
+    "cron": "node --loader ts-node/esm lib/cron/Job.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
@@ -43,6 +44,7 @@
     "@types/node": "^20.11.17",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
@@ -76,8 +78,7 @@
     "sonner": "^1.4.2",
     "tailwind-merge": "^2.2.1",
     "tailwindcss": "^3.4.1",
-    "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.8.3"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
@@ -88,7 +89,9 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "postcss-import": "^16.1.1",
-    "postcss-nesting": "^13.0.2"
+    "postcss-nesting": "^13.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "resolutions": {
     "rimraf": ">=4.0.0",

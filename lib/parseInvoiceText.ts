@@ -15,13 +15,14 @@ export async function parseInvoiceFromText(
     user_id: userId,
     client_name: "",
     client_address: "",
-    client_email: senderEmail,
+    client_email: "",
     invoice_date: new Date().toISOString().split("T")[0],
     Date_range: "",
     term: "",
     project_code: "",
     payment_charges: 0,
     items: [],
+    senderEmail: senderEmail
   };
 
   const getValue = (str: string): string => {
