@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { parseEmailsFromGmail } from "@/lib/utilsServer";
-import { sendInvoiceToApi } from "@/lib/sendInvoiceToApi";
-import { sendInvoiceByGmail } from "@/lib/sendInvoiceByGmail";
+import { sendInvoiceToApi } from "@/lib/utilsServer";
+import { sendInvoiceByGmail } from "@/lib/utilsServer";
 import path from "path";
+import axios from "axios";
 
 export async function GET() {
   try {
@@ -17,7 +18,7 @@ export async function GET() {
       // 2. Extract invoice ID safely
       const invoiceId = res?.data?.invoiceId || res?.data?.id;
       const invoiceNumber = res?.data?.invoiceNumber;
-
+      console.log("Invoice ID:", invoiceId);
       if (!invoiceId) throw new Error("Invoice ID missing after save");
 
       // 3. Path to the generated PDF
@@ -60,7 +61,6 @@ export async function GET() {
         },
       });
     }
-
     return NextResponse.json({ success: true, invoices: results });
   } catch (error: any) {
     console.error("Email Read Error:", error);

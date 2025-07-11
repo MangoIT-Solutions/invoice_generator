@@ -9,6 +9,17 @@ export async function GET(req: NextRequest) {
     process.env.GOOGLE_REDIRECT_URI
   );
 
+  if (
+    !process.env.GOOGLE_CLIENT_ID ||
+    !process.env.GOOGLE_CLIENT_SECRET ||
+    !process.env.GOOGLE_REDIRECT_URI
+  ) {
+    return NextResponse.json(
+      { error: "Missing Google OAuth environment variables" },
+      { status: 500 }
+    );
+  }
+
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
 
@@ -18,20 +29,44 @@ export async function GET(req: NextRequest) {
 
   try {
     const { tokens } = await oauth2Client.getToken(code);
-    const refreshToken = tokens.refresh_token;
-
-    if (!refreshToken) {
+    oauth2Client.setCredentials(tokens);
+    console.log("OAuth tokens received:", tokens);
+    console.log("Granted scopes:", tokens.scope);
+    if (!tokens.scope?.includes("gmail.readonly")) {
       return NextResponse.json(
-        { error: "No refresh token returned" },
+        { error: "Missing required Gmail scopes" },
         { status: 400 }
       );
     }
 
-    // Save the refresh token to the database
-    await saveRefreshToken(refreshToken);
+    const refreshToken = tokens.refresh_token;
+    const accessToken = tokens.access_token;
 
-    //  Redirect to email reading endpoint
-    return NextResponse.redirect(new URL("/api/email", req.url));
+    console.log("Scopes granted:", oauth2Client.credentials.scope);
+
+    if (!refreshToken || !accessToken) {
+      return NextResponse.json(
+        { error: "Missing refresh or access token" },
+        { status: 400 }
+      );
+    }
+
+    // Use access token to fetch user email
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+    const { data } = await oauth2.userinfo.get();
+    const email = data.email;
+
+    if (!email) {
+      return NextResponse.json(
+        { error: "User email not found" },
+        { status: 400 }
+      );
+    }
+    // Save refresh token and email
+    await saveRefreshToken(refreshToken, email);
+
+    return NextResponse.redirect(new URL("/google-authentication", req.url));
   } catch (error) {
     console.error("OAuth Callback Error:", error);
     return NextResponse.json({ error: "OAuth failed" }, { status: 500 });

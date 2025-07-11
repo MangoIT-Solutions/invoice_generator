@@ -15,4 +15,4 @@ export function startCronJob() {
   });
 }
 
-startCronJob(); 
+startCronJob();

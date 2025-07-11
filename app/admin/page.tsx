@@ -57,7 +57,16 @@ export default function AdminDashboard() {
   };
 
   return (
-    <AdminLayout activeTab={activeTab} onTabChange={setActiveTab}>
+    <AdminLayout
+      activeTab={activeTab}
+      onTabChange={(tab) => {
+        if (tab === "authorization") {
+          router.push("/google-authentication");
+        } else {
+          setActiveTab(tab);
+        }
+      }}
+    >
       {renderContent()}
     </AdminLayout>
   );
