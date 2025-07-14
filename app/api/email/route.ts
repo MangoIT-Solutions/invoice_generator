@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parseEmailsFromGmail } from "@/lib/utilsServer";
 import { sendInvoiceToApi } from "@/lib/utilsServer";
 import { sendInvoiceByGmail } from "@/lib/utilsServer";
+import { updateInvoiceFromPayload } from "@/lib/utilsServer";
 import path from "path";
 import axios from "axios";
 
@@ -12,16 +13,27 @@ export async function GET() {
     const results = [];
 
     for (const invoice of parsedInvoices) {
-      // 1. Save invoice to DB
-      const res = await sendInvoiceToApi(invoice.payload);
+      let invoiceId: number | undefined;
+      let invoiceNumber: string | undefined;
 
-      // 2. Extract invoice ID safely
-      const invoiceId = res?.data?.invoiceId || res?.data?.id;
-      const invoiceNumber = res?.data?.invoiceNumber;
-      console.log("Invoice ID:", invoiceId);
-      if (!invoiceId) throw new Error("Invoice ID missing after save");
+      if (invoice.type === "update") {
+        const updateResult = await updateInvoiceFromPayload(invoice.payload);
+        invoiceId = updateResult.invoice_id;
+        invoiceNumber = invoice.payload.invoice_number;
 
-      // 3. Path to the generated PDF
+        console.log("✅ Updated invoice:", invoiceId);
+      } else {
+        const res = await sendInvoiceToApi(invoice.payload);
+        invoiceId = res?.data?.invoiceId || res?.data?.id;
+        invoiceNumber = res?.data?.invoiceNumber;
+        console.log("🆕 Created invoice:", invoiceId);
+      }
+
+      if (!invoiceId || !invoiceNumber) {
+        throw new Error("Invoice ID or number missing after create/update");
+      }
+
+      // PDF Path
       const pdfPath = path.join(
         process.cwd(),
         "public",
@@ -29,30 +41,29 @@ export async function GET() {
         `invoice-${invoiceNumber}.pdf`
       );
 
-      // 4. Email content
       const subject = `📄 Your Invoice #${invoiceNumber} from Mango IT Solutions`;
+      const textBody = `Invoice #${invoiceNumber} attached.\nTotal: ₹${
+        invoice.payload.total || invoice.payload.total_amount || "N/A"
+      }`;
 
-      const textBody = `Invoice #${invoiceNumber} attached.\nTotal: ₹${invoice.payload.total_amount}`;
-
-      // 5. Send formatted email with PDF
       await sendInvoiceByGmail(
         invoice.payload.senderEmail,
         subject,
         textBody,
         pdfPath
       );
-      console.log("📧 Sending invoice to:", invoice.payload.client_email);
-      console.log("🧾 Invoice payload:", invoice.payload);
 
-      // 6. Add to result
+      console.log("📧 Sent invoice email to:", invoice.payload.client_email);
+
       results.push({
         invoiceId,
         invoiceNumber,
         email: invoice.payload.client_email,
         client: invoice.payload.client_name,
+        type: invoice.type,
       });
 
-      // 7. Mark email as read
+      // Mark email as read
       await gmail.users.messages.modify({
         userId: "me",
         id: invoice.id,
@@ -61,6 +72,7 @@ export async function GET() {
         },
       });
     }
+    
     return NextResponse.json({ success: true, invoices: results });
   } catch (error: any) {
     console.error("Email Read Error:", error);
