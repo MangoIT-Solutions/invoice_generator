@@ -407,7 +407,6 @@ export async function parseEmailContentForUpdating(
 }
 
 
-
 export async function updateInvoiceFromPayload(payload) {
   const {
     invoice_number,
@@ -435,7 +434,7 @@ export async function updateInvoiceFromPayload(payload) {
   const invoice = invoiceRows[0];
   const invoiceId = invoice.id;
 
-  // Step 2: Update invoice fields (if provided)
+  // Step 2: Update invoice fields
   const fields = [];
   const values = [];
 
@@ -506,22 +505,17 @@ export async function updateInvoiceFromPayload(payload) {
     }
   }
 
-  // Step 5: Replace items
+  // Step 5: Replace items (Update)
   if (items?.replace?.length) {
     for (const item of items.replace) {
-      await client.execute({
-        sql: `DELETE FROM invoice_items WHERE invoice_id = ? AND description = ?`,
-        args: [invoiceId, item.description],
-      });
-
-      await client.execute({
-        sql: `INSERT INTO invoice_items (invoice_id, description, base_rate, unit, amount) VALUES (?, ?, ?, ?, ?)`,
+      const [updateResult] = await client.execute({
+        sql: `UPDATE invoice_items SET base_rate = ?, unit = ?, amount = ? WHERE invoice_id = ? AND description = ?`,
         args: [
-          invoiceId,
-          item.description,
           item.base_rate,
           item.unit,
           item.amount,
+          invoiceId,
+          item.description,
         ],
       });
     }
@@ -539,13 +533,12 @@ export async function updateInvoiceFromPayload(payload) {
       ? payment_charges
       : invoice.payment_charges;
 
-const total = subtotal + Number(finalCharges);
+  const total = subtotal + Number(finalCharges);
 
-await client.execute({
-  sql: `UPDATE invoices SET subtotal = ?, total = ? WHERE id = ?`,
-  args: [subtotal, total, invoiceId],
-});
-
+  await client.execute({
+    sql: `UPDATE invoices SET subtotal = ?, total = ? WHERE id = ?`,
+    args: [subtotal, total, invoiceId],
+  });
 
   return { status: "success", invoice_id: invoiceId };
 }
