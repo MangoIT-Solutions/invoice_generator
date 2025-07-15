@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "database/config.ts", "config/config.js", "seeders/20250711131333-bank-details.js", "migrations/20250711130659-create-bank-details.js"  ],
   "exclude": [
     "node_modules"
   ]

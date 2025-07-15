@@ -1,21 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserInvoices } from '@/lib/invoice';
-import { initializeDatabase } from '@/lib/database';
+import { initDB } from '@/database/db';
+import { Invoice } from '@/model/invoice.model';
+import { InvoiceItem } from '@/model/invoice-item.model';
+import { User } from '@/model/user.model';
 
 export async function GET(request: NextRequest) {
   try {
-    await initializeDatabase();
-    
-    // In a real app, you'd get the user ID from the session/token
-    // For now, we'll get it from headers or return all invoices
+    await initDB();
+
     const userId = request.headers.get('user-id');
-    
     if (!userId) {
-      // Return empty array if no user ID
       return NextResponse.json({ invoices: [] });
     }
 
-    const invoices = await getUserInvoices(parseInt(userId));
+    const invoices = await Invoice.findAll({
+      where: { user_id: parseInt(userId) },
+      include: [
+        {
+          model: InvoiceItem,
+          as: 'items',
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'email'],
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
     return NextResponse.json({ invoices });
   } catch (error) {
     console.error('Error fetching user invoices:', error);

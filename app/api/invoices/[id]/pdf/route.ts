@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/lib/invoice';
-import { initializeDatabase } from '@/lib/database';
+import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/services/invoice.service';
+import { initDB } from '@/database/db';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
@@ -10,20 +10,21 @@ export async function GET(
   { params }: { params: Promise<{ id: number }> }
 ) {
   try {
-    await initializeDatabase();
-    const invoiceId = Number(await params);
+    await initDB();
+    const { id } = await params;
     const pdfDir = path.join(process.cwd(), 'public', 'invoices');
-    const pdfPath = path.join(pdfDir, `invoice-${invoiceId}.pdf`);
+    const pdfPath = path.join(pdfDir, `invoice-${id}.pdf`);
 
     // Check if PDF already exists, if not generate it
     if (!existsSync(pdfPath)) {
-      const invoiceData = await getInvoiceWithItems(invoiceId);
+      const invoiceData = await getInvoiceWithItems(id);
       if (!invoiceData) {
         return new Response('Invoice not found', { status: 404 });
       }
 
       const company = await getCompanyConfig();
       const bank = await getBankDetails();
+
       // Combine invoice and items into a single object for the PDF generator
       const invoiceWithItems = {
         ...invoiceData.invoice,
@@ -31,11 +32,11 @@ export async function GET(
       };
 
       // Generate the PDF
-      await generateInvoicePdf( 
+      await generateInvoicePdf(
         invoiceWithItems,
         company,
         bank,
-        `invoice-${invoiceId}.pdf`
+        `invoice-${id}.pdf`
       );
     }
 
@@ -45,7 +46,7 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename=invoice-${invoiceId}.pdf`,
+        'Content-Disposition': `attachment; filename=invoice-${id}.pdf`,
         'Content-Length': String(pdfBuffer.length),
       },
     });

@@ -40,7 +40,6 @@ export default function BankDetails() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
       const response = await fetch('/api/admin/bank', {
         method: 'POST',
@@ -51,15 +50,13 @@ export default function BankDetails() {
       });
 
       const data = await response.json();
-
       if (response.ok) {
         toast.success('Bank details saved successfully');
-        router.push('/admin/bank');
       } else {
         toast.error(data.error || 'Failed to save bank details');
       }
     } catch (error) {
-      toast.error('Network error occurred');
+      toast.error('Network error occurred 644');
     } finally {
       setIsLoading(false);
     }
