@@ -6,6 +6,7 @@ import { createMimeMessage } from "mimetext";
 import { getRefreshToken, getAutomateUser, client } from "@/lib/database";
 import { generateInvoiceHtmlBody } from "@/lib/utils";
 
+// Sends parsed invoice data to API endpoint (`/api/invoices`) to create a new invoice record in DB.
 export async function sendInvoiceToApi(invoicePayload: any) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/invoices`, {
     method: "POST",
@@ -17,6 +18,7 @@ export async function sendInvoiceToApi(invoicePayload: any) {
   return { status: res.status, data };
 }
 
+// Sends a PDF invoice as email to client using Gmail API:
 export async function sendInvoiceByGmail(
   to: string,
   subject: string,
@@ -68,10 +70,11 @@ export async function sendInvoiceByGmail(
     return res;
   } catch (error) {
     console.error("❌ Failed to send invoice email:", error);
-    throw error; // rethrow to handle upstream
+    throw error; 
   }
 }
 
+// Reads unread Gmail emails with a specific label and subject.
 export async function parseEmailsFromGmail() {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) throw new Error("No refresh token in DB");
@@ -132,9 +135,15 @@ export async function parseEmailsFromGmail() {
       const parsedEmail = await simpleParser(
         Buffer.from(rawMsg.data.raw!, "base64")
       );
+      console.log("Parsed subject:", parsedEmail.subject);
+      if (!parsedEmail.subject) {
+        console.warn(`No subject found in message ${message.id}`);
+        continue;
+      }
       const subject = parsedEmail.subject || "";
+      console.log("📧 Email subject:", subject);
 
-      if (subject.includes("Update")) {
+      if (subject.includes("Invoice Update")) {
         const invoicePayload = await parseEmailContentForUpdating(
           rawMsg.data.raw!,
           userId
@@ -162,10 +171,10 @@ export async function parseEmailsFromGmail() {
       );
     }
   }
-
   return { gmail, parsedInvoices, accessToken };
 }
 
+// Parses the body of a Gmail email to extract invoice fields:
 export async function parseEmailContentForCreating(
   rawBase64Data: string,
   userId: number
@@ -273,7 +282,6 @@ export async function parseEmailContentForCreating(
   return payload;
 }
 
-
 export async function extractSenderAndBody(rawBase64: string): Promise<{
   senderEmail: string;
   bodyText: string;
@@ -284,7 +292,7 @@ export async function extractSenderAndBody(rawBase64: string): Promise<{
 
   return { senderEmail, bodyText };
 }
-
+// Parses the email to extract update actions:
 export async function parseEmailContentForUpdating(
   rawBase64Data: string,
   userId: number
@@ -301,7 +309,7 @@ export async function parseEmailContentForUpdating(
     .filter(Boolean);
 
   const payload: any = {
-    invoice_number: "", // Required for identifying invoice
+    invoice_number: "",
     user_id: userId,
     client_name: "",
     client_address: "",
@@ -319,7 +327,6 @@ export async function parseEmailContentForUpdating(
     senderEmail,
   };
 
-  
   const getValue = (str: string, fieldName = "Unknown") => {
     const parts = str.split(":");
     if (parts.length < 2) throw new Error(`Missing ':' for ${fieldName}`);
@@ -342,8 +349,14 @@ export async function parseEmailContentForUpdating(
     } else if (lower.startsWith("client email:")) {
       payload.client_email = getValue(line, "Client Email");
     } else if (lower.startsWith("invoice date:")) {
-      payload.invoice_date = getValue(line, "Invoice Date");
-    } else if (lower.startsWith("project code:")) {
+      const rawDate = getValue(line, "Invoice Date");
+      const [day, month, year] = rawDate.split("/");
+      if (!day || !month || !year) {
+        throw new Error(`Invalid Invoice Date format: ${rawDate}`);
+      }
+      payload.invoice_date = `${year}-${month}-${day}`; 
+    }
+    else if (lower.startsWith("project code:")) {
       payload.project_code = getValue(line, "Project Code");
     } else if (lower.startsWith("term:")) {
       payload.term = getValue(line, "Term");
@@ -351,8 +364,7 @@ export async function parseEmailContentForUpdating(
       payload.Date_range = getValue(line, "Date Range");
     } else if (lower.startsWith("include transfer charges:")) {
       const val = getValue(line, "Include Transfer Charges").toLowerCase();
-      if (val === "yes") payload.payment_charges = 35;
-      else if (val === "no") payload.payment_charges = 0;
+      payload.payment_charges = val === "yes" ? 35 : 0;
     } else if (lower.startsWith("items:")) {
       isItemSection = true;
     } else if (isItemSection && lower.startsWith("- action:")) {
@@ -375,20 +387,22 @@ export async function parseEmailContentForUpdating(
         if (
           !rateMatch ||
           !unitMatch ||
-          !amountMatch ||
           isNaN(parseFloat(rateMatch[1])) ||
-          isNaN(parseFloat(unitMatch[1])) ||
-          isNaN(parseFloat(amountMatch[1]))
+          isNaN(parseFloat(unitMatch[1]))
         ) {
-          throw new Error(`Invalid or missing fields in line: ${line}`);
+          throw new Error(`Missing base rate or unit in line: ${line}`);
         }
 
-        const item = {
-          description,
-          base_rate: parseFloat(rateMatch[1]),
-          unit: parseFloat(unitMatch[1]),
-          amount: parseFloat(amountMatch[1]),
-        };
+        const base_rate = parseFloat(rateMatch[1]);
+        const unit = parseFloat(unitMatch[1]);
+
+        // Calculate amount if not provided
+        let amount = base_rate * unit;
+        if (amountMatch && !isNaN(parseFloat(amountMatch[1]))) {
+          amount = parseFloat(amountMatch[1]);
+        }
+
+        const item = { description, base_rate, unit, amount };
 
         if (action === "add") {
           payload.items.add.push(item);
@@ -406,7 +420,7 @@ export async function parseEmailContentForUpdating(
   return payload;
 }
 
-
+// Executes logic to update an invoice in DB based on payload:
 export async function updateInvoiceFromPayload(payload) {
   const {
     invoice_number,
@@ -424,12 +438,18 @@ export async function updateInvoiceFromPayload(payload) {
   if (!invoice_number) throw new Error("Invoice number is required");
 
   // Step 1: Fetch invoice
-  const { rows: invoiceRows } = await client.execute({
+  const result = await client.execute({
     sql: "SELECT id, payment_charges FROM invoices WHERE invoice_number = ?",
     args: [invoice_number],
   });
 
-  if (!invoiceRows.length) throw new Error("Invoice not found");
+  const invoiceRows = result.rows as Array<{
+    id: number;
+    payment_charges: number;
+  }>;
+
+  if (!Array.isArray(invoiceRows) || invoiceRows.length === 0)
+    throw new Error("Invoice not found");
 
   const invoice = invoiceRows[0];
   const invoiceId = invoice.id;
@@ -489,11 +509,18 @@ export async function updateInvoiceFromPayload(payload) {
     }
   }
 
-  // Step 4: Add items
+  // Step 4: Add or Update items
   if (items?.add?.length) {
     for (const item of items.add) {
       await client.execute({
-        sql: `INSERT INTO invoice_items (invoice_id, description, base_rate, unit, amount) VALUES (?, ?, ?, ?, ?)`,
+        sql: `
+        INSERT INTO invoice_items (invoice_id, description, base_rate, unit, amount)
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          base_rate = VALUES(base_rate),
+          unit = VALUES(unit),
+          amount = VALUES(amount)
+      `,
         args: [
           invoiceId,
           item.description,
@@ -508,7 +535,7 @@ export async function updateInvoiceFromPayload(payload) {
   // Step 5: Replace items (Update)
   if (items?.replace?.length) {
     for (const item of items.replace) {
-      const [updateResult] = await client.execute({
+      await client.execute({
         sql: `UPDATE invoice_items SET base_rate = ?, unit = ?, amount = ? WHERE invoice_id = ? AND description = ?`,
         args: [
           item.base_rate,
@@ -522,10 +549,11 @@ export async function updateInvoiceFromPayload(payload) {
   }
 
   // Step 6: Recalculate totals
-  const { rows: updatedItems } = await client.execute({
+  const updatedItemsResult = await client.execute({
     sql: `SELECT amount FROM invoice_items WHERE invoice_id = ?`,
     args: [invoiceId],
   });
+  const updatedItems = updatedItemsResult.rows as Array<{ amount: number }>;
 
   const subtotal = updatedItems.reduce((sum, i) => sum + Number(i.amount), 0);
   const finalCharges =
