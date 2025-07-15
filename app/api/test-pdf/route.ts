@@ -7,7 +7,7 @@ export async function GET() {
     await initializeDatabase();
     
     // Test data that matches the expected structure
-    const testInvoice = {
+    const testInvoice:any = {
       id: 1,
       invoice_number: 'TEST-001',
       client_name: 'Test Client',
@@ -33,7 +33,7 @@ export async function GET() {
       ]
     };
 
-    const testCompany = {
+    const testCompany:any = {
       id: 1,
       name: 'Test Company',
       logo: '/logo.png',
@@ -45,7 +45,7 @@ export async function GET() {
       hsn_sac: '12345678'
     };
 
-    const testBank = {
+    const testBank:any = {
       id: 1,
       account_number: '1234567890',
       bank_name: 'Test Bank',

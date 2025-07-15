@@ -5,7 +5,7 @@ export async function getCompanyConfig() {
     const company = await Company.findOne();
 
     if (company) {
-      const plain = company.get({ plain: true });
+      const plain = company.get({ plain: true })as any;
       if (plain.company_logo && !plain.logo) {
         plain.logo = plain.company_logo; // for template compatibility
       }

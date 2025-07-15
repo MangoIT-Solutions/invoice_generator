@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get company and bank info
-    const company = await getCompanyConfig();
-    const bank = await getBankDetails();
+    const company:any = await getCompanyConfig();
+    const bank:any = await getBankDetails();
 
     if (!company || !bank) {
       return NextResponse.json(
@@ -61,14 +61,14 @@ export async function POST(request: NextRequest) {
 
     const pdfFileName = `invoice-${invoiceNumber}.pdf`;
 
-    // ✅ Assert correct types for TypeScript
-    const invoiceWithItems: InvoiceWithItems = {
-      invoice: dbInvoiceData.invoice as InvoiceInstance,
-      items: dbInvoiceData.items as InvoiceItemInstance[],
+    // The invoice object from the DB is the source of truth
+    const invoiceWithItems:any = {
+      ...dbInvoiceData.invoice,
+      items: dbInvoiceData.items,
     };
 
     try {
-      await generateInvoicePdf(invoiceWithItems , company as Company, bank as BankDetails, pdfFileName);
+      await generateInvoicePdf(invoiceWithItems, company as Company, bank as BankDetails, pdfFileName);
     } catch (pdfError: unknown) {
       console.error(`[Invoice] Failed to generate PDF for invoiceId=${invoiceId}:`, pdfError);
       const errorMessage = pdfError instanceof Error ? pdfError.message : String(pdfError);
@@ -110,21 +110,21 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE /api/invoices/[id]
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
-    try {
-      const { id } = context.params;
-  
-      const deletedCount = await Invoice.destroy({
-        where: { id: parseInt(id) },
-      });
-  
-      if (deletedCount === 0) {
-        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
-      }
-  
-      return NextResponse.json({ success: true });
-    } catch (error) {
-      console.error('Error deleting invoice:', error);
-      return NextResponse.json({ error: 'Failed to delete invoice' }, { status: 500 });
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: number }> }) {
+  try {
+    const { id } = await params;
+
+    const deletedCount = await Invoice.destroy({
+      where: { id: id },
+    });
+
+    if (deletedCount === 0) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting invoice:', error);
+    return NextResponse.json({ error: 'Failed to delete invoice' }, { status: 500 });
   }
+}

@@ -12,7 +12,7 @@ const sequelize = new Sequelize(
     port: Number(process.env.MYSQL_PORT || 3306),
     dialect: 'mysql',
     dialectModule: mysql2,
-    logging: console.log, // set to true to see SQL logs
+    logging: false // set to true to see SQL logs
   }
 );
 
