@@ -4,11 +4,11 @@ import { initDB } from '@/database/db';
 import { Invoice } from '@/model/invoice.model'; // ✅ Use Sequelize model
 
 // ✅ GET /api/invoice/[id]
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
     await initDB();
 
-    const { id } = context.params;
+    const { id } = await params;
     const invoiceData = await getInvoiceWithItems(Number(id));
     if (!invoiceData) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
@@ -29,11 +29,11 @@ export async function GET(request: NextRequest, context: { params: { id: string 
 }
 
 // ✅ DELETE /api/invoice/[id]
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
     await initDB();
 
-    const { id } = context.params;
+    const { id } = await params;
 
     const deletedCount = await Invoice.destroy({
       where: { id: Number(id) }
