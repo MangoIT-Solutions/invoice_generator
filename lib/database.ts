@@ -227,6 +227,21 @@ export async function initializeDatabase() {
   } finally {
     connection.release();
   }
+  // Insert default config keys if not exists
+  const defaultConfigs = [
+    ["invoiceRequestEmailAllowed", "abc@example.com,xyz@example.com"],
+    ["upaidInvoiceReminderDays", "5"],
+    ["marginAmountForUnduePayment", "2.5"],
+  ];
+
+  for (const [key, value] of defaultConfigs) {
+    await connection.query(
+      `INSERT INTO config (\`key\`, \`value\`)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`,
+      [key, value]
+    );
+  }
 }
 
 export async function getAllProjects() {
@@ -329,3 +344,38 @@ export async function getAutomateUser(): Promise<number> {
     connection.release();
   }
 }
+
+// Example function to get config value by key
+// export async function getConfigValue(key: string): Promise<string | null> {
+//   const connection = await pool.getConnection();
+//   try {
+//     const [rows] = await connection.query(
+//       `SELECT \`value\` FROM config WHERE \`key\` = ? LIMIT 1`,
+//       [key]
+//     );
+//     return Array.isArray(rows) && rows.length ? rows[0].value : null;
+//   } finally {
+//     connection.release();
+//   }
+// }
+// export async function setConfigValue(key: string, value: string) {
+//   const connection = await pool.getConnection();
+//   try {
+//     await connection.query(
+//       `INSERT INTO config (\`key\`, \`value\`)
+//        VALUES (?, ?)
+//        ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`,
+//       [key, value]
+//     );
+//   } finally {
+//     connection.release();
+//   }
+// }
+// export async function deleteConfigValue(key: string) {
+//   const connection = await pool.getConnection();
+//   try {
+//     await connection.query(`DELETE FROM config WHERE \`key\` = ?`, [key]);
+//   } finally {
+//     connection.release();
+//   }
+// }
