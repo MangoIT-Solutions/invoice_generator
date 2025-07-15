@@ -49,7 +49,6 @@ export default function InvoiceConfig() {
 
       if (response.ok) {
         toast.success('Invoice configuration saved successfully');
-        router.push('/admin/invoice-config');
       } else {
         toast.error(data.error || 'Failed to save configuration');
       }

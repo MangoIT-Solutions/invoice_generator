@@ -1,9 +1,11 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/lib/invoice';
-import { initializeDatabase } from '@/lib/database';
-import nodemailer from 'nodemailer';
+import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/services/invoice.service';
+import { initDB } from '@/database/db';
+import nodemailer from 'nodemailer'
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
+import { generateInvoicePdf } from '@/lib/invoicePdf';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'http://localhost:3000',
@@ -22,7 +24,7 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
-    await initializeDatabase();
+    await initDB();
     const { id } = await params;
     let to = '';
     let subject = '';
@@ -36,7 +38,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     } catch (e) {
       // If parsing fails, just use defaults
+      
     }
+
     const invoiceData = await getInvoiceWithItems(id);
     if (!invoiceData) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404, headers: corsHeaders });
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const company = await getCompanyConfig();
     const bank = await getBankDetails();
 
-    const pdfFileName = `invoice-${invoiceData.invoice.invoice_number}.pdf`;
+    const pdfFileName = `invoice-${id}.pdf`;
     const pdfPath = path.join(process.cwd(), 'public', 'invoices', pdfFileName);
     let pdfBuffer: Buffer | null = null;
 
@@ -52,9 +56,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       pdfBuffer = readFileSync(pdfPath);
     } else {
       // Regenerate PDF if missing
-      const { generateInvoicePdf } = await import('@/lib/invoicePdf');
       const invoiceWithItems = { ...invoiceData.invoice, items: invoiceData.items };
-      await generateInvoicePdf(invoiceWithItems, company, bank, pdfFileName);
+     const pdfPath =  await generateInvoicePdf(invoiceWithItems, company, bank, `invoice-${id}.pdf`);
       if (existsSync(pdfPath)) {
         pdfBuffer = readFileSync(pdfPath);
       } else {

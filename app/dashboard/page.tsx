@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Mail, Eye, LogOut, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import AdminLayout from '@/app/components/AdminLayout';
+import AdminLayout from '@/app/components/admin/AdminLayout';
 import GenerateInvoice from '@/app/components/admin/GenerateInvoice';
 import InvoicesGrid from '@/app/components/admin/InvoicesGrid';
 

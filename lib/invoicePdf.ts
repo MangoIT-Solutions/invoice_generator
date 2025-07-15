@@ -2,7 +2,10 @@ import { writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
 import puppeteer from 'puppeteer';
 import { generateInvoiceHtml } from './invoiceHtmlTemplate';
-import type { Invoice, Company, BankDetails, InvoiceItem } from './database';
+import type { Invoice  } from '@/model/invoice.model';
+import type { InvoiceItem  } from '@/model/invoice-item.model';
+import type { Company as CompanyInstance } from '@/model/company.model';
+import type { BankDetails as BankDetailsInstance } from '@/model/bank-details.model';
 
 interface InvoiceWithItems extends Omit<Invoice, 'id' | 'user_id' | 'created_at'> {
   id: number;
@@ -12,25 +15,27 @@ interface InvoiceWithItems extends Omit<Invoice, 'id' | 'user_id' | 'created_at'
 
 /**
  * Generate a PDF from invoice data and save to disk.
- * @param invoiceData Invoice data with items
- * @param company Company configuration
- * @param bank Bank details
- * @param pdfFileName Output PDF filename (e.g. invoice-123.pdf)
- * @returns Promise that resolves when PDF is generated
+ * @param invoiceData Invoice instance + associated items
+ * @param company Sequelize Company instance
+ * @param bank Sequelize BankDetails instance
+ * @param pdfFileName Output filename (e.g., invoice-123.pdf)
  */
+
+
 export async function generateInvoicePdf(
   invoiceData: InvoiceWithItems,
-  company: Company,
-  bank: BankDetails,
+  company: CompanyInstance,
+  bank: BankDetailsInstance,
   pdfFileName: string
 ): Promise<string> {
   const pdfDir = path.join(process.cwd(), 'public', 'invoices');
   const pdfPath = path.join(pdfDir, pdfFileName);
 
-  // Ensure the invoices directory exists
+  // Ensure invoices directory exists
   mkdirSync(pdfDir, { recursive: true });
 
-  // Generate HTML content
+  const items = invoiceData.items.map(item => item.get({ plain: true }));
+
   const htmlContent = generateInvoiceHtml(
     {
       ...invoiceData,
@@ -61,16 +66,13 @@ export async function generateInvoicePdf(
   try {
     const page = await browser.newPage();
 
-    // Set content and wait for any resources to load
     await page.setContent(htmlContent, {
       waitUntil: 'networkidle0',
-      timeout: 30000 // 30 seconds timeout
+      timeout: 30000
     });
 
-    // Emulate screen media type for better rendering
     await page.emulateMediaType('screen');
 
-    // Generate PDF
     const pdfBuffer = await page.pdf({
       path: pdfPath,
       format: 'A4',
@@ -79,9 +81,7 @@ export async function generateInvoicePdf(
       preferCSSPageSize: true,
     });
 
-    // Save the PDF file
     writeFileSync(pdfPath, pdfBuffer);
-
     return pdfPath;
   } catch (error) {
     console.error('Error generating PDF:', error);

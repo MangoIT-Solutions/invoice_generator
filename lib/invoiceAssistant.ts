@@ -1,4 +1,4 @@
-import { parseWithLLM } from "./llmUtils";
+import { parseWithLLM } from "../services/project-details.service";
 
 export interface InvoiceItem {
   description: string;
@@ -128,11 +128,6 @@ export class InvoiceAssistant {
         reply: "That doesn't look like a valid email address. Please try again:",
         state: this.state
       };
-    }
-
-    // In a real app, send the email here
-    if (this.state.step === 'collect_email') {
-      console.log(`Sending invoice to ${email}`, this.state.invoice);
     }
 
     this.state = { step: 'complete' };
