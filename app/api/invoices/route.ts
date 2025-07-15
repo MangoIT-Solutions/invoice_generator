@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get company and bank info
-    const company = await getCompanyConfig();
-    const bank = await getBankDetails();
+    const company:any = await getCompanyConfig();
+    const bank:any = await getBankDetails();
 
     if (!company || !bank) {
       return NextResponse.json(
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const pdfFileName = `invoice-${invoiceNumber}.pdf`;
 
     // The invoice object from the DB is the source of truth
-    const invoiceWithItems = {
+    const invoiceWithItems:any = {
       ...dbInvoiceData.invoice,
       items: dbInvoiceData.items,
     };

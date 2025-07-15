@@ -22,11 +22,11 @@ export async function GET(
         return new Response('Invoice not found', { status: 404 });
       }
 
-      const company = await getCompanyConfig();
-      const bank = await getBankDetails();
+      const company:any = await getCompanyConfig();
+      const bank:any = await getBankDetails();
 
       // Combine invoice and items into a single object for the PDF generator
-      const invoiceWithItems = {
+      const invoiceWithItems:any = {
         ...invoiceData.invoice,
         items: invoiceData.items
       };

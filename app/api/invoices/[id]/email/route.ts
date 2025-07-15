@@ -45,8 +45,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!invoiceData) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404, headers: corsHeaders });
     }
-    const company = await getCompanyConfig();
-    const bank = await getBankDetails();
+    const company:any = await getCompanyConfig();
+    const bank:any = await getBankDetails();
 
     const pdfFileName = `invoice-${id}.pdf`;
     const pdfPath = path.join(process.cwd(), 'public', 'invoices', pdfFileName);
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       pdfBuffer = readFileSync(pdfPath);
     } else {
       // Regenerate PDF if missing
-      const invoiceWithItems = { ...invoiceData.invoice, items: invoiceData.items };
+      const invoiceWithItems:any = { ...invoiceData.invoice, items: invoiceData.items };
      const pdfPath =  await generateInvoicePdf(invoiceWithItems, company, bank, `invoice-${id}.pdf`);
       if (existsSync(pdfPath)) {
         pdfBuffer = readFileSync(pdfPath);

@@ -1,6 +1,7 @@
 import { ProjectDetail } from '@/model/project.model';
+import { ProjectDetails } from '@/model';
 
-export async function getProjectDetails(projectCode: string): Promise<ProjectDetail | null> {
+export async function getProjectDetails(projectCode: string): Promise<ProjectDetails | null> {
   try {
     const project = await ProjectDetail.findOne({
       where: { project_code: projectCode },

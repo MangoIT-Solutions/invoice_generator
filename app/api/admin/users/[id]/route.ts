@@ -6,7 +6,7 @@ import { Op } from 'sequelize';
 // PUT /api/users/:id
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: number }> }): Promise<NextResponse> {
   try {
-    const id = await params;
+    const {id} = await params;
     const { username, email, password, role } = await req.json();
 
     if (!username || !email) {
@@ -50,15 +50,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 // DELETE /api/users/:id
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: number }> }): Promise<NextResponse> {
   try {
-    const id = await params;
-
+    const {id} = await params;
     const deletedCount = await User.destroy({
       where: {
         id,
         role: { [Op.ne]: 'admin' }, // Do not delete admin users
       },
     });
-
+    console.log("deletedCount", deletedCount);
     if (deletedCount === 0) {
       return NextResponse.json(
         { error: 'User not found or is an admin' },
