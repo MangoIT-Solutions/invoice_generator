@@ -1,11 +1,11 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser } from '@/lib/auth';
-import { initializeDatabase } from '@/lib/database';
+import { authenticateUser } from '@/services/auth.service';
+import { initDB } from '@/database/db';
 
 export async function POST(request: NextRequest) {
   try {
-    await initializeDatabase();
+    await initDB();
 
     const { email, password } = await request.json();
 

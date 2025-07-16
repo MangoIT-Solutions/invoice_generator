@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Download, Mail, Eye, Trash2 } from 'lucide-react';
+import {Mail, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -52,23 +51,6 @@ export default function InvoicesGrid() {
             toast.error('Failed to fetch invoices');
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const handleDownloadPDF = async (invoiceId: number) => {
-        try {
-            const response = await fetch(`/api/invoices/${invoiceId}/pdf`);
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `invoice-${invoiceId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (error) {
-            toast.error('Failed to download PDF');
         }
     };
 

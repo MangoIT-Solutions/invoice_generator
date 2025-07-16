@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBankDetails, updateBankDetails } from '@/lib/invoice';
-import { initializeDatabase } from '@/lib/database';
+import { getBankDetails, updateBankDetails } from '@/services/bank.service';
+import { initDB } from '@/database/db';
 
 export async function GET() {
   try {
-    await initializeDatabase();
+    await initDB();
     const bank = await getBankDetails();
     return NextResponse.json({ bank });
   } catch (error) {
@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await initializeDatabase();
+    await initDB();
     
     const data = await request.json();
     await updateBankDetails(data);

@@ -1,7 +1,7 @@
 
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-import { getRefreshToken } from "@/lib/database";
+import { getRefreshToken } from "@/services/google.service";
 
 export async function GET() {
   try {

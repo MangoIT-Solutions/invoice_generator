@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
-import AdminLayout from "@/app/components/AdminLayout";
+import AdminLayout from "@/app/components/admin/AdminLayout";
 import UserManagement from "@/app/components/admin/UserManagement";
 import CompanyConfig from "@/app/components/admin/CompanyConfig";
 import InvoiceConfig from "@/app/components/admin/InvoiceConfig";
 import GenerateInvoice from "@/app/components/admin/GenerateInvoice";
 import InvoicesGrid from "@/app/components/admin/InvoicesGrid";
 import BankDetails from "@/app/components/admin/BankDetails";
-import Authorization from "@/app/components/admin/Authorization";
+import Authorization from "../components/admin/Authorization";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("users");

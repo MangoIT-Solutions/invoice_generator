@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCompanyConfig, updateCompanyConfig } from '@/lib/invoice';
-import { initializeDatabase } from '@/lib/database';
+import { getCompanyConfig, updateCompanyConfig } from '@/services/company.service';
+import { initDB } from '@/database/db';
 
 export async function GET() {
   try {
-    await initializeDatabase();
+    await initDB();
     const company = await getCompanyConfig();
     return NextResponse.json({ company });
   } catch (error) {
@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await initializeDatabase();
+    await initDB();
     
     const data = await request.json();
     await updateCompanyConfig(data);

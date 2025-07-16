@@ -4,9 +4,13 @@ import { sendInvoiceToApi } from "@/lib/utilsServer";
 import { sendInvoiceByGmail } from "@/lib/utilsServer";
 import { updateInvoiceFromPayload } from "@/lib/utilsServer";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
-import { getBankDetails, getCompanyConfig } from "@/lib/invoice";
+import {
+  getCompanyConfig,
+} from "@/services/company.service";
+import { getBankDetails } from "@/services/bank.service";
 import path from "path";
-import { client } from "@/lib/database";
+import { Invoice } from "@/model/invoice.model";
+import { InvoiceItem } from "@/model/invoice-item.model";
 
 export async function GET() {
   try {
@@ -25,19 +29,14 @@ export async function GET() {
         invoiceNumber = invoice.payload.invoice_number;
         console.log("✅ Updated invoice:", invoiceId);
 
-        // ✅ Fetch updated invoice and items
-        const { rows: updatedInvoiceRows } = await client.execute({
-          sql: "SELECT * FROM invoices WHERE id = ?",
-          args: [invoiceId],
+        // ✅ Fetch updated invoice and items using Sequelize (as model instances)
+        const updatedInvoice = await Invoice.findByPk(invoiceId, {
+          include: [{ model: InvoiceItem, as: "items" }],
         });
-        const updatedInvoice = Array.isArray(updatedInvoiceRows)
-          ? updatedInvoiceRows[0]
-          : undefined;
 
-        const { rows: updatedItems } = await client.execute({
-          sql: "SELECT * FROM invoice_items WHERE invoice_id = ?",
-          args: [invoiceId],
-        });
+        if (!updatedInvoice) {
+          throw new Error("Updated invoice not found");
+        }
 
         // ✅ Fetch company and bank info (update if table name differs)
         const company = await getCompanyConfig();
@@ -45,7 +44,7 @@ export async function GET() {
 
         // ✅ Generate PDF
         await generateInvoicePdf(
-          { ...updatedInvoice, items: updatedItems },
+          updatedInvoice as any, // InvoiceWithItems type
           company,
           bank,
           `invoice-${invoiceNumber}.pdf`

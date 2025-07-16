@@ -307,7 +307,7 @@ export async function getRefreshToken(): Promise<string | null> {
     );
 
     if (Array.isArray(rows) && rows.length > 0) {
-      return rows[0].value;
+      return (rows as { value: any }[])[0].value;
     }
 
     return null; // No token found

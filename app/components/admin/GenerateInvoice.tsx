@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { DateRange } from 'react-day-picker';
 import { startOfMonth, endOfMonth } from 'date-fns';
-import DateRangePicker from '@/components/ui/date-range-picker';
+import {DateRangePicker} from '../ui/date-range-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,10 +12,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, Plus, Trash2, Save, Send } from 'lucide-react';
+import { FileText, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ProjectDetails } from '@/lib/database';
 import { useRouter } from 'next/navigation';
+import { InvoiceDatePicker } from '../ui/invoice-date-picker';
+import { ProjectDetails } from '@/model/index';
 
 interface InvoiceItem {
   description: string;
@@ -39,12 +40,11 @@ export default function GenerateInvoice() {
     client_company_name: '',
     client_address: '',
     client_email: '',
-    invoice_date: new Date().toISOString().split('T')[0],
+    invoice_date: new Date(),
     period: `${defaultFrom.toLocaleDateString()} - ${defaultTo.toLocaleDateString()}`,
     term: '',
     project_code: ''
   });
-
   const [items, setItems] = useState<InvoiceItem[]>([
     { description: '', base_rate: 0, unit: 1, amount: 0 }
   ]);
@@ -113,7 +113,7 @@ export default function GenerateInvoice() {
       setFormData({
         ...formData,
         period: `${range.from.toLocaleDateString()} - ${range.to.toLocaleDateString()}`
-      });
+      }); 
     }
   };
 
@@ -246,19 +246,13 @@ export default function GenerateInvoice() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="invoice_date">Invoice Date</Label>
-                <Input
-                  id="invoice_date"
-                  type="date"
-                  value={formData.invoice_date}
-                  onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
-                  required
-                />
+                <InvoiceDatePicker />
               </div>
               <div className="md:col-span-2">
                 <Label>Date Range (Period)</Label>
                 <DateRangePicker
-                  selected={dateRange}
-                  onSelect={handleDateRangeChange}
+                   value={dateRange}
+                   onChange={handleDateRangeChange}
                 />
               </div>
 

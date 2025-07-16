@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
-import { saveRefreshToken } from "@/lib/database";
+import { saveRefreshToken } from "@/services/google.service";
 
 export async function GET(req: NextRequest) {
   const oauth2Client = new google.auth.OAuth2(

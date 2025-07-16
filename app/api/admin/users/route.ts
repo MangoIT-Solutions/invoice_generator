@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllUsers, createUser } from '@/lib/auth';
-import { initializeDatabase } from '@/lib/database';
+import { getAllUsers, createUser } from '@/services/auth.service';
+import { initDB } from '@/database/db';
 
 export async function GET() {
   try {
-    await initializeDatabase();
+    await initDB();
     const users = await getAllUsers();
     return NextResponse.json({ users });
   } catch (error) {
@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await initializeDatabase();
+    await initDB();
     
     const { username, email, password, role } = await request.json();
 

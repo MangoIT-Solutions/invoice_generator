@@ -7,8 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Download, Mail, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
@@ -58,6 +56,7 @@ export default function InvoiceView() {
       setIsLoading(false);
     }
   };
+
   const generatePDF = async () => {
     try {
       if (!params || !('id' in params) || !params.id) {
@@ -155,7 +154,7 @@ export default function InvoiceView() {
                 className="bg-white border-2 border-gray-900 rounded-md"
                 style={{ boxSizing: 'border-box' }}
               >
-                <div className="px-6 py-4">
+                <div className="px-6">
                   {/* Company Info Row */}
                   <div className="flex justify-between items-start">
                     {/* Logo - Left Aligned */}
@@ -164,19 +163,19 @@ export default function InvoiceView() {
                         <img
                           src={company.company_logo.startsWith('uploads/') || company.company_logo.startsWith('/uploads/') ? `/` + company.company_logo.replace(/^\/+/, '') : `/uploads/${company.company_logo.replace(/^\/+/, '')}`}
                           alt="Company Logo"
-                          className="h-16 object-contain bg-white border border-gray-200 p-1"
+                          className="h-16 object-contain bg-white border border-gray-200 mt-1 ml-[-20px]"
                         />
                       )}
                     </div>
 
                     {/* Company Details - Right Aligned */}
-                    <div className="text-right">
+                    <div className="">
                       <h1 className="text-xl font-bold">{company?.name || 'Mango IT Solutions'}</h1>
-                      <p className="text-sm text-gray-600 -mt-1">a web & mobile dev company</p>
+                      <p className="text-sm mt-1">a web & mobile dev company</p>
                       <div className="text-xs mt-1 space-y-0.5">
                         <p>{company?.address || '15/3 Old Palasia, Behind Sarda House, Indore 452 001 INDIA'}</p>
                         <p>{company?.contact || '+91-731-4044117'} / {company?.email || 'accounts@mangoitsolutions.com'}</p>
-                        <p>GSTIN-23XXXXXPS9604H1Z1 {company?.hsn_sac && `• HSN / SAC: ${company.hsn_sac}`}</p>
+                        <p>GSTIN-23XXXXXPS9604H1Z1 {/*company?.hsn_sac  && `• HSN / SAC: ${company.hsn_sac}` */ }</p>
                       </div>
                     </div>
                   </div>
@@ -188,7 +187,7 @@ export default function InvoiceView() {
                 </div>
 
                 {/* Invoice Details - split left/right */}
-                <div className="flex flex-row -mx-6 px-6 py-2 m-2 p-2 ">
+                <div className="flex flex-row ">
                   {/* Left: Bill To (client info) */}
                   <div className="w-1/2 pr-4 p-2 border-r-2 border-black">
                     <h3 className="text-sm font-bold mb-1">Bill To</h3>
@@ -197,7 +196,8 @@ export default function InvoiceView() {
                       <p>{invoice.client_address?.replace(/\n|\r/g, ', ')}</p>
                     </div>
                     <div className="text-xs">
-                      <p>KA: <span className="font-bold">{invoice.client_name}</span> | Email: {invoice.client_email}</p>
+                      <p>KA: <span className="font-bold py-2">{company.admin_name}</span></p>
+                      <p>Email: {invoice.client_email}</p>
                     </div>
                   </div>
 
@@ -215,7 +215,27 @@ export default function InvoiceView() {
                         </tr>
                         <tr>
                           <td className="py-0.5">Period:</td>
-                          <td className="py-0.5">{invoice.period ? formatPeriod(invoice.period) : 'N/A'}</td>
+                          
+                          <td className="py-0.5">
+                            {invoice.period 
+                              ? (() => {
+                                  const [start, end]: [string, string] = invoice.period.split(' - ');
+
+                                  const formatDate = (dateStr: string): string => {
+                                    const [day, month, year] = dateStr.split('/');
+                                    const dateObj = new Date(`${year}-${month}-${day}`);
+                                    return dateObj.toLocaleDateString('en-GB', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: '2-digit',
+                                    }).replace(/ /g, '-');
+                                  };
+
+                                  return `${formatDate(start)} to ${formatDate(end)}`;
+                                })()
+                              : 'N/A'}
+                          </td>
+
                         </tr>
                         <tr>
                           <td className="py-0.5">Term:</td>
@@ -235,13 +255,13 @@ export default function InvoiceView() {
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="border-b-2 border-t-2 border-black">
-                        <th className="px-3 py-1 text-left text-sm font-normal" rowSpan={2}>Description</th>
-                        <th className="px-3 py-1 text-center text-sm font-normal border-l border-black" colSpan={2}>Rate</th>
-                        <th className="px-3 py-1 text-right text-sm font-normal border-l border-black" rowSpan={2}>Amount (USD)</th>
+                        <th className="px-3 py-1 text-left text-sm font-bold" rowSpan={2}>Description</th>
+                        <th className="px-3 py-1 text-center text-sm font-bold border-l border-black" colSpan={2}>Rate</th>
+                        <th className="px-3 py-1 text-right text-sm font-bold border-l border-black" rowSpan={2}>Amount (USD)</th>
                       </tr>
                       <tr className="border-b-2 border-black">
-                        <th className="px-3 py-1 text-center text-sm font-normal border-l border-black">Base</th>
-                        <th className="px-3 py-1 text-center text-sm font-normal border-l border-r border-black">Unit</th>
+                        <th className="px-3 py-1 text-center text-sm font-bold border-l border-black">Base</th>
+                        <th className="px-3 py-1 text-center text-sm font-bold border-l border-r border-black">Unit</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -279,15 +299,15 @@ export default function InvoiceView() {
                 </div>
 
                 {/* HSN/SAC and Export Note */}
-                <div className="px-6 py-2 text-xs border-b border-black">
-                  <div className="flex justify-between">
+                <div className="text-xs">
+                  <div className="flex justify-between border-y-2 border-black px-6 py-2 w-full">
                     <div>HSN / SAC: {company?.hsn_sac || '998314'}</div>
                     <div className="text-right">SUPPLY/MENT FOR EXPORT UNDER LUT WITHOUT PAYMENT OF INTEGRATED TAX</div>
                   </div>
                 </div>
 
                 {/* Net Balance */}
-                <div className="px-6 py-2 text-right font-bold text-sm border-b-2 border-black">
+                <div className="px-6 py-2 text-right font-bold text-sm border-b border-black">
                   Net Balance Due: ${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : Number(invoice.total || 0).toFixed(2)}
                 </div>
 
@@ -351,7 +371,7 @@ export default function InvoiceView() {
 
                 {/* Footer Note */}
                 <div className="px-6 py-2 text-xs text-center border-t border-b border-black">
-                  Please note a late payment charge @ 2% per month will be levied on all invoices not paid within 7 days of due date.
+                Late payments charges, if paid later than 7days per terms, @ 1.5% monthly interest or USD 35, whichever is greater.
                 </div>
               </div>
             </CardContent>
@@ -403,7 +423,7 @@ export default function InvoiceView() {
 }
 
 function formatPeriod(period: string) {
-  // Expecting format: 'YYYY-MM-DD - YYYY-MM-DD' or 'MM/DD/YYYY - MM/DD/YYYY' or similar
+  // Expecting format: 'YYYY-MM-DD - YYYY-MM-DD' or 'MM/DD/YYYY - MM/DD/YYYY' or similar  
   const [from, to] = period.split(/\s*-\s*/);
   if (!from || !to) return period;
   const fromDate = new Date(from);

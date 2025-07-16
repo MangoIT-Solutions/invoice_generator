@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { client } from '@/lib/database';
-// @ts-ignore - bcryptjs has type issues in some versions
 import bcrypt from 'bcryptjs';
+import { User } from '@/model/user.model';
+import { Op } from 'sequelize';
 
+// PUT /api/users/:id
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: number }> }): Promise<NextResponse> {
   try {
-    const { id } = await params;
+    const {id} = await params;
     const { username, email, password, role } = await req.json();
 
     if (!username || !email) {
@@ -15,51 +16,58 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-    let updateQuery = 'UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?';
-    let args = [username, email, role, id];
+    // Prepare update fields
+    const updateData: any = { username, email, role };
 
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery = 'UPDATE users SET username = ?, email = ?, password = ?, role = ? WHERE id = ?';
-      args = [username, email, hashedPassword, role, id];
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
-    await client.execute({
-      sql: updateQuery,
-      args
+    const [updatedCount] = await User.update(updateData, {
+      where: { id },
     });
+
+    if (updatedCount === 0) {
+      return NextResponse.json(
+        { error: 'User not found or no changes made' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error updating user:', error);
-    if (error.message.includes('UNIQUE constraint failed')) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
       return NextResponse.json(
         { error: 'Username or email already exists' },
         { status: 400 }
       );
     }
-    return NextResponse.json(
-      { error: 'Failed to update user' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }
 
+// DELETE /api/users/:id
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: number }> }): Promise<NextResponse> {
   try {
-    const { id } = await params;
-
-    await client.execute({
-      sql: 'DELETE FROM users WHERE id = ? AND role != "admin"',
-      args: [id]
+    const {id} = await params;
+    const deletedCount = await User.destroy({
+      where: {
+        id,
+        role: { [Op.ne]: 'admin' }, // Do not delete admin users
+      },
     });
+    console.log("deletedCount", deletedCount);
+    if (deletedCount === 0) {
+      return NextResponse.json(
+        { error: 'User not found or is an admin' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting user:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete user' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
   }
 }

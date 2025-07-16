@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/lib/invoice';
-import { initializeDatabase } from '@/lib/database';
-import { client } from '@/lib/database';
+import { getInvoiceWithItems, getCompanyConfig, getBankDetails } from '@/services/invoice.service';
+import { initDB } from '@/database/db';
+import { Invoice } from '@/model/invoice.model'; // ✅ Use Sequelize model
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
+// ✅ GET /api/invoice/[id]
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
-    await initializeDatabase();
+    await initDB();
 
     const { id } = await params;
-    const invoiceData = await getInvoiceWithItems(id);
-
+    const invoiceData = await getInvoiceWithItems(Number(id));
     if (!invoiceData) {
-      return NextResponse.json(
-        { error: 'Invoice not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
     const company = await getCompanyConfig();
@@ -27,23 +24,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } catch (error) {
     console.error('Error fetching invoice:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch invoice' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch invoice' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: number }> }) {
+// ✅ DELETE /api/invoice/[id]
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: number }> }) {
   try {
-    await initializeDatabase();
+    await initDB();
+
     const { id } = await params;
-    await client.execute({
-      sql: 'DELETE FROM invoices WHERE id = ?',
-      args: [id],
+
+    const deletedCount = await Invoice.destroy({
+      where: { id: Number(id) }
     });
+
+    if (deletedCount === 0) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error deleting invoice:', error);
     return NextResponse.json({ error: 'Failed to delete invoice' }, { status: 500 });
   }
 }

@@ -3,8 +3,12 @@ import path from "path";
 import { google } from "googleapis";
 import { simpleParser } from "mailparser";
 import { createMimeMessage } from "mimetext";
-import { getRefreshToken, getAutomateUser, client } from "@/lib/database";
+import { getAutomateUser, getRefreshToken } from "@/services/google.service";
+import { Invoice } from "@/model/invoice.model";
+import { InvoiceItem } from "@/model/invoice-item.model";
+import { Op } from "sequelize";
 import { generateInvoiceHtmlBody } from "@/lib/utils";
+
 
 // Sends parsed invoice data to API endpoint (`/api/invoices`) to create a new invoice record in DB.
 export async function sendInvoiceToApi(invoicePayload: any) {
@@ -420,7 +424,7 @@ export async function parseEmailContentForUpdating(
   return payload;
 }
 
-// Executes logic to update an invoice in DB based on payload:
+// Updates an existing invoice based on the provided payload.
 export async function updateInvoiceFromPayload(payload) {
   const {
     invoice_number,
@@ -438,73 +442,39 @@ export async function updateInvoiceFromPayload(payload) {
   if (!invoice_number) throw new Error("Invoice number is required");
 
   // Step 1: Fetch invoice
-  const result = await client.execute({
-    sql: "SELECT id, payment_charges FROM invoices WHERE invoice_number = ?",
-    args: [invoice_number],
+  const invoice = await Invoice.findOne({
+    where: { invoice_number },
+    attributes: ["id", "payment_charges"],
   });
 
-  const invoiceRows = result.rows as Array<{
-    id: number;
-    payment_charges: number;
-  }>;
+  if (!invoice) throw new Error("Invoice not found");
 
-  if (!Array.isArray(invoiceRows) || invoiceRows.length === 0)
-    throw new Error("Invoice not found");
-
-  const invoice = invoiceRows[0];
   const invoiceId = invoice.id;
 
   // Step 2: Update invoice fields
-  const fields = [];
-  const values = [];
+  const updateData: any = {};
+  if (client_name) updateData.client_name = client_name;
+  if (client_address) updateData.client_address = client_address;
+  if (client_email) updateData.client_email = client_email;
+  if (invoice_date) updateData.invoice_date = invoice_date;
+  if (Date_range) updateData.period = Date_range;
+  if (term) updateData.term = term;
+  if (project_code) updateData.project_code = project_code;
+  if (typeof payment_charges !== "undefined")
+    updateData.payment_charges = payment_charges;
 
-  if (client_name) {
-    fields.push("client_name = ?");
-    values.push(client_name);
-  }
-  if (client_address) {
-    fields.push("client_address = ?");
-    values.push(client_address);
-  }
-  if (client_email) {
-    fields.push("client_email = ?");
-    values.push(client_email);
-  }
-  if (invoice_date) {
-    fields.push("invoice_date = ?");
-    values.push(invoice_date);
-  }
-  if (Date_range) {
-    fields.push("period = ?");
-    values.push(Date_range);
-  }
-  if (term) {
-    fields.push("term = ?");
-    values.push(term);
-  }
-  if (project_code) {
-    fields.push("project_code = ?");
-    values.push(project_code);
-  }
-  if (typeof payment_charges !== "undefined") {
-    fields.push("payment_charges = ?");
-    values.push(payment_charges);
-  }
-
-  if (fields.length) {
-    values.push(invoice_number);
-    await client.execute({
-      sql: `UPDATE invoices SET ${fields.join(", ")} WHERE invoice_number = ?`,
-      args: values,
-    });
+  if (Object.keys(updateData).length) {
+    await Invoice.update(updateData, { where: { invoice_number } });
   }
 
   // Step 3: Remove items
   if (items?.remove?.length) {
     for (const desc of items.remove) {
-      await client.execute({
-        sql: `DELETE FROM invoice_items WHERE invoice_id = ? AND description = ?`,
-        args: [invoiceId, desc],
+      await InvoiceItem.destroy({
+        where: {
+          invoice_id: invoiceId,
+          description: desc,
+        },
       });
     }
   }
@@ -512,50 +482,46 @@ export async function updateInvoiceFromPayload(payload) {
   // Step 4: Add or Update items
   if (items?.add?.length) {
     for (const item of items.add) {
-      await client.execute({
-        sql: `
-        INSERT INTO invoice_items (invoice_id, description, base_rate, unit, amount)
-        VALUES (?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          base_rate = VALUES(base_rate),
-          unit = VALUES(unit),
-          amount = VALUES(amount)
-      `,
-        args: [
-          invoiceId,
-          item.description,
-          item.base_rate,
-          item.unit,
-          item.amount,
-        ],
+      await InvoiceItem.upsert({
+        invoice_id: invoiceId,
+        description: item.description,
+        base_rate: item.base_rate,
+        unit: item.unit,
+        amount: item.amount,
       });
     }
   }
 
-  // Step 5: Replace items (Update)
+  // Step 5: Replace items (force update)
   if (items?.replace?.length) {
     for (const item of items.replace) {
-      await client.execute({
-        sql: `UPDATE invoice_items SET base_rate = ?, unit = ?, amount = ? WHERE invoice_id = ? AND description = ?`,
-        args: [
-          item.base_rate,
-          item.unit,
-          item.amount,
-          invoiceId,
-          item.description,
-        ],
-      });
+      await InvoiceItem.update(
+        {
+          base_rate: item.base_rate,
+          unit: item.unit,
+          amount: item.amount,
+        },
+        {
+          where: {
+            invoice_id: invoiceId,
+            description: item.description,
+          },
+        }
+      );
     }
   }
 
   // Step 6: Recalculate totals
-  const updatedItemsResult = await client.execute({
-    sql: `SELECT amount FROM invoice_items WHERE invoice_id = ?`,
-    args: [invoiceId],
+  const updatedItems = await InvoiceItem.findAll({
+    where: { invoice_id: invoiceId },
+    attributes: ["amount"],
   });
-  const updatedItems = updatedItemsResult.rows as Array<{ amount: number }>;
 
-  const subtotal = updatedItems.reduce((sum, i) => sum + Number(i.amount), 0);
+  const subtotal = updatedItems.reduce(
+    (sum, item) => sum + Number(item.amount),
+    0
+  );
+
   const finalCharges =
     typeof payment_charges !== "undefined"
       ? payment_charges
@@ -563,10 +529,7 @@ export async function updateInvoiceFromPayload(payload) {
 
   const total = subtotal + Number(finalCharges);
 
-  await client.execute({
-    sql: `UPDATE invoices SET subtotal = ?, total = ? WHERE id = ?`,
-    args: [subtotal, total, invoiceId],
-  });
+  await Invoice.update({ subtotal, total }, { where: { id: invoiceId } });
 
   return { status: "success", invoice_id: invoiceId };
 }

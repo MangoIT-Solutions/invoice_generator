@@ -78,7 +78,6 @@ export default function CompanyConfig() {
       const data = await response.json();
       if (response.ok) {
         toast.success('Company configuration saved successfully');
-        router.push('/admin/company');
       } else {
         toast.error(data.error || 'Failed to save configuration');
       }
