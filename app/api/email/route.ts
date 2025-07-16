@@ -4,8 +4,9 @@ import { sendInvoiceToApi } from "@/lib/utilsServer";
 import { sendInvoiceByGmail } from "@/lib/utilsServer";
 import { updateInvoiceFromPayload } from "@/lib/utilsServer";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
+import { getBankDetails, getCompanyConfig } from "@/lib/invoice";
 import path from "path";
-import { client } from "@/lib/database"; 
+import { client } from "@/lib/database";
 
 export async function GET() {
   try {
@@ -29,7 +30,9 @@ export async function GET() {
           sql: "SELECT * FROM invoices WHERE id = ?",
           args: [invoiceId],
         });
-        const updatedInvoice = Array.isArray(updatedInvoiceRows) ? updatedInvoiceRows[0] : undefined;
+        const updatedInvoice = Array.isArray(updatedInvoiceRows)
+          ? updatedInvoiceRows[0]
+          : undefined;
 
         const { rows: updatedItems } = await client.execute({
           sql: "SELECT * FROM invoice_items WHERE invoice_id = ?",
@@ -37,18 +40,8 @@ export async function GET() {
         });
 
         // ✅ Fetch company and bank info (update if table name differs)
-        const companyResult = await client.execute({
-          sql: "SELECT * FROM company LIMIT 1",
-          args: [],
-        });
-        const companyRows = Array.isArray(companyResult.rows) ? companyResult.rows : [];
-        const company = companyRows[0];
-
-        const { rows: bankRows } = await client.execute({
-          sql: "SELECT * FROM bank_details LIMIT 1",
-          args: [],
-        });
-        const bank = Array.isArray(bankRows) ? bankRows[0] : undefined;
+        const company = await getCompanyConfig();
+        const bank = await getBankDetails();
 
         // ✅ Generate PDF
         await generateInvoicePdf(

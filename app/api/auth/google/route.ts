@@ -25,9 +25,6 @@ export async function GET() {
     scope: scopes,
     include_granted_scopes: false,
   });
-  console.log(
-    " Visit this URL in your browser to re-authorize Gmail access:\n"
-  );
   console.log("Generated Google OAuth URL:", url);
 
   return NextResponse.json({ url });
