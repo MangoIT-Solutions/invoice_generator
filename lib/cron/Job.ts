@@ -4,7 +4,7 @@ import axios from "axios";
 export function startCronJob() {
   console.log("Cron job initialized and waiting for the first run...");
 
-  cron.schedule("*/5 * * * *", async () => {
+  cron.schedule("*/1 * * * *", async () => {
     try {
       console.log("Running email fetch cron job...");
       await axios.get("http://localhost:3000/api/email");
