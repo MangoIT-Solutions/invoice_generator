@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initDB } from "@/database/db";
-import { InvoiceConfig } from "@/database/models/invoice-config.model";
 import Config from "@/database/models/config.model";
 import { Op } from "sequelize";
 
@@ -8,7 +7,7 @@ export async function GET() {
   try {
     await initDB();
 
-    const config = await InvoiceConfig.findOne();
+    const config = await Config.findOne();
     return NextResponse.json({ config });
   } catch (error) {
     console.error("Error fetching invoice config:", error);
@@ -40,17 +39,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ Step 2: Upsert invoice_config (single row only)
-    const existingInvoiceConfig = await InvoiceConfig.findOne();
-    if (existingInvoiceConfig) {
-      await existingInvoiceConfig.update({
-        starting_number,
-        current_number,
-      });
-    } else {
-      await InvoiceConfig.create({ starting_number, current_number });
-    }
-
     // ✅ Step 3: Reusable upsert function for config table
     const upsertConfig = async (key: string, value: string) => {
       const existing = await Config.findOne({ where: { key } });
@@ -61,6 +49,27 @@ export async function POST(request: NextRequest) {
         await Config.create({ key, value });
       }
     };
+
+    // ✅ Step 2: Upsert invoice_config (single row only)
+    const existingInvoiceConfig = await Config.findOne();
+    if (existingInvoiceConfig) {
+      await upsertConfig("starting_number", String(starting_number));
+      await upsertConfig("current_number", String(current_number));
+      await upsertConfig(
+        "invoiceRequestEmailAllowed",
+        invoiceRequestEmailAllowed
+      );
+      await upsertConfig(
+        "upaidInvoiceReminderDays",
+        String(upaidInvoiceReminderDays)
+      );
+      await upsertConfig(
+        "marginAmountForUnduePayment",
+        marginAmountForUnduePayment
+      );
+    } else {
+      await Config.create({ starting_number, current_number });
+    }
 
     // ✅ Step 4: Store configs
     await upsertConfig(
