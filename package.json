@@ -92,7 +92,8 @@
     "postcss-import": "^16.1.1",
     "postcss-nesting": "^13.0.2",
     "sequelize": "^6.37.7",
-    "sequelize-cli": "^6.6.3"
+    "sequelize-cli": "^6.6.3",
+    "ts-node": "^10.9.2"
   },
   "resolutions": {
     "rimraf": ">=4.0.0",

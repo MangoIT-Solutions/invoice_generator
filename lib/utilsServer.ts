@@ -531,3 +531,35 @@ export async function updateInvoiceFromPayload(payload) {
 
   return { status: "success", invoice_id: invoiceId };
 }
+
+export async function sendEmail(to: string, subject: string, text: string) {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken) throw new Error("Missing refresh token");
+
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+    process.env.GOOGLE_REDIRECT_URI!
+  );
+
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  const message = createMimeMessage();
+  message.setSender("me");
+  message.setRecipient(to);
+  message.setSubject(subject);
+  message.addMessage({ contentType: "text/plain", data: text });
+
+  const rawMessage = Buffer.from(message.asRaw())
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  await gmail.users.messages.send({
+    userId: "me",
+    requestBody: { raw: rawMessage },
+  });
+}
