@@ -119,6 +119,10 @@ export default function InvoiceConfig() {
                   onChange={handleChange}
                   required
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Set the initial number from which invoice numbering will
+                  begin.
+                </p>
               </div>
               <div>
                 <Label htmlFor="current_number">Current Invoice Number</Label>
@@ -130,6 +134,9 @@ export default function InvoiceConfig() {
                   onChange={handleChange}
                   required
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  This number will be used for the next invoice to be generated.
+                </p>
               </div>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg mt-4">
@@ -168,7 +175,11 @@ export default function InvoiceConfig() {
                   placeholder="abc@example.com, xyz@example.com"
                   value={formData.invoiceRequestEmailAllowed || ""}
                   onChange={handleChange}
+                  required
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Enter one or more allowed emails, comma-separated.
+                </p>
               </div>
 
               {/* Reminder Days */}
@@ -180,7 +191,11 @@ export default function InvoiceConfig() {
                   type="number"
                   value={formData.upaidInvoiceReminderDays || ""}
                   onChange={handleChange}
+                  required
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Number of days after which unpaid invoice reminders are sent.
+                </p>
               </div>
 
               {/* Margin Amount */}
@@ -196,7 +211,11 @@ export default function InvoiceConfig() {
                   placeholder="Enter margin amount..."
                   value={formData.marginAmountForUnduePayment || ""}
                   onChange={handleChange}
+                  required
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Amount threshold for overdue payment slack/adjustment.
+                </p>
               </div>
             </div>
           </CardContent>

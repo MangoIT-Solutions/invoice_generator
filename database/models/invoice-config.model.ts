@@ -5,8 +5,8 @@ import {
   InferAttributes,
   InferCreationAttributes,
   CreationOptional,
-} from 'sequelize';
-import sequelize from '../database/sequelize';
+} from "sequelize";
+import sequelize from "../sequelize";
 
 export class InvoiceConfig extends Model<
   InferAttributes<InvoiceConfig>,
@@ -35,7 +35,7 @@ InvoiceConfig.init(
   },
   {
     sequelize,
-    tableName: 'invoice_config',
+    tableName: "invoice_config",
     timestamps: false,
   }
 );

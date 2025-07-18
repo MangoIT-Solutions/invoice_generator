@@ -4,8 +4,8 @@ import {
   InferAttributes,
   InferCreationAttributes,
   CreationOptional,
-} from 'sequelize';
-import sequelize from '../database/sequelize';
+} from "sequelize";
+import sequelize from "../sequelize";
 
 export class Company extends Model<
   InferAttributes<Company>,
@@ -40,7 +40,7 @@ Company.init(
   },
   {
     sequelize,
-    tableName: 'company',
+    tableName: "company",
     timestamps: false,
   }
 );

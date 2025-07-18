@@ -3,19 +3,21 @@ import {
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
-  CreationOptional
-} from 'sequelize';
-import sequelize from '../database/sequelize';
-import { User } from './user.model';
-import { InvoiceItem } from './invoice-item.model';
+  CreationOptional,
+} from "sequelize";
+import sequelize from "../sequelize";
+import { User } from "./user.model";
+import { InvoiceItem } from "./invoice-item.model";
 
 let invoiceAssociated = false;
 
-export const associateInvoice = (models: { InvoiceItem: typeof InvoiceItem }) => {
+export const associateInvoice = (models: {
+  InvoiceItem: typeof InvoiceItem;
+}) => {
   if (!invoiceAssociated) {
     Invoice.hasMany(models.InvoiceItem, {
-      foreignKey: 'invoice_id',
-      as: 'items',
+      foreignKey: "invoice_id",
+      as: "items",
     });
     invoiceAssociated = true;
   }
@@ -39,7 +41,7 @@ export class Invoice extends Model<
   declare subtotal: number;
   declare payment_charges: number;
   declare total: number;
-  declare status: 'draft' | 'sent' | 'paid';
+  declare status: "draft" | "sent" | "paid";
   declare created_at: CreationOptional<Date>;
 }
 
@@ -66,7 +68,7 @@ Invoice.init(
     client_company_name: {
       type: DataTypes.STRING,
       allowNull: true,
-      defaultValue: '',
+      defaultValue: "",
     },
     client_address: {
       type: DataTypes.STRING,
@@ -87,7 +89,7 @@ Invoice.init(
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
     },
-   
+
     payment_charges: {
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
@@ -97,8 +99,8 @@ Invoice.init(
       defaultValue: 0,
     },
     status: {
-      type: DataTypes.ENUM('draft', 'sent', 'paid'),
-      defaultValue: 'draft',
+      type: DataTypes.ENUM("draft", "sent", "paid"),
+      defaultValue: "draft",
     },
     created_at: {
       type: DataTypes.DATE,
@@ -107,10 +109,10 @@ Invoice.init(
   },
   {
     sequelize,
-    tableName: 'invoices',
+    tableName: "invoices",
     timestamps: false,
   }
 );
 
-Invoice.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-Invoice.hasMany(InvoiceItem, { foreignKey: 'invoice_id', as: 'items' });
+Invoice.belongsTo(User, { foreignKey: "user_id", as: "user" });
+Invoice.hasMany(InvoiceItem, { foreignKey: "invoice_id", as: "items" });

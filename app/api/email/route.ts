@@ -4,13 +4,11 @@ import { sendInvoiceToApi } from "@/lib/utilsServer";
 import { sendInvoiceByGmail } from "@/lib/utilsServer";
 import { updateInvoiceFromPayload } from "@/lib/utilsServer";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
-import {
-  getCompanyConfig,
-} from "@/services/company.service";
+import { getCompanyConfig } from "@/services/company.service";
 import { getBankDetails } from "@/services/bank.service";
 import path from "path";
-import { Invoice } from "@/model/invoice.model";
-import { InvoiceItem } from "@/model/invoice-item.model";
+import { Invoice } from "@/database/models/invoice.model";
+import { InvoiceItem } from "@/database/models/invoice-item.model";
 
 export async function GET() {
   try {

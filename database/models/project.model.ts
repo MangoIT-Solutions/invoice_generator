@@ -1,9 +1,9 @@
 // models/project-details.model.ts
-import { DataTypes } from 'sequelize';
-import sequelize from '../database/sequelize';
+import { DataTypes } from "sequelize";
+import sequelize from "../sequelize";
 
 export const ProjectDetail = sequelize.define(
-  'ProjectDetail',
+  "ProjectDetail",
   {
     project_id: {
       type: DataTypes.INTEGER,
@@ -32,7 +32,7 @@ export const ProjectDetail = sequelize.define(
     },
   },
   {
-    tableName: 'projects_details',
+    tableName: "projects_details",
     timestamps: false,
   }
 );

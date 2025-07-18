@@ -1,5 +1,5 @@
 // services/bank.service.ts
-import { BankDetails } from '@/model/bank-details.model';
+import { BankDetails } from "@/database/models/bank-details.model";
 
 export async function getBankDetails() {
   try {
@@ -10,7 +10,7 @@ export async function getBankDetails() {
     }
     return null;
   } catch (error) {
-    console.error('Error fetching bank details:', error);
+    console.error("Error fetching bank details:", error);
     return null;
   }
 }
@@ -44,7 +44,7 @@ export async function updateBankDetails(data: any) {
       });
     }
   } catch (error) {
-    console.error('Error updating bank details:', error);
+    console.error("Error updating bank details:", error);
     throw error;
   }
 }

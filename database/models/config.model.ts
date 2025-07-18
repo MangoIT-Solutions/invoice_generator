@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../database/sequelize";
+import sequelize from "../sequelize";
 
 const Config = sequelize.define(
   "Config",
@@ -14,7 +14,7 @@ const Config = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: false,
       unique: true,
-      field: "key", 
+      field: "key",
     },
     value: {
       type: DataTypes.TEXT,
@@ -33,7 +33,7 @@ const Config = sequelize.define(
   },
   {
     tableName: "config",
-    timestamps: false, 
+    timestamps: false,
   }
 );
 

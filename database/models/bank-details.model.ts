@@ -6,7 +6,7 @@ import {
   InferCreationAttributes,
   CreationOptional,
 } from "sequelize";
-import sequelize from "../database/sequelize";
+import sequelize from "../sequelize";
 
 export class BankDetails extends Model<
   InferAttributes<BankDetails>,

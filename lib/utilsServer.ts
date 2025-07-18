@@ -4,11 +4,10 @@ import { google } from "googleapis";
 import { simpleParser } from "mailparser";
 import { createMimeMessage } from "mimetext";
 import { getAutomateUser, getRefreshToken } from "@/services/google.service";
-import { Invoice } from "@/model/invoice.model";
-import { InvoiceItem } from "@/model/invoice-item.model";
+import { Invoice } from "@/database/models/invoice.model";
+import { InvoiceItem } from "@/database/models/invoice-item.model";
 import { Op } from "sequelize";
 import { generateInvoiceHtmlBody } from "@/lib/utils";
-
 
 // Sends parsed invoice data to API endpoint (`/api/invoices`) to create a new invoice record in DB.
 export async function sendInvoiceToApi(invoicePayload: any) {
@@ -74,7 +73,7 @@ export async function sendInvoiceByGmail(
     return res;
   } catch (error) {
     console.error("❌ Failed to send invoice email:", error);
-    throw error; 
+    throw error;
   }
 }
 
@@ -358,9 +357,8 @@ export async function parseEmailContentForUpdating(
       if (!day || !month || !year) {
         throw new Error(`Invalid Invoice Date format: ${rawDate}`);
       }
-      payload.invoice_date = `${year}-${month}-${day}`; 
-    }
-    else if (lower.startsWith("project code:")) {
+      payload.invoice_date = `${year}-${month}-${day}`;
+    } else if (lower.startsWith("project code:")) {
       payload.project_code = getValue(line, "Project Code");
     } else if (lower.startsWith("term:")) {
       payload.term = getValue(line, "Term");
