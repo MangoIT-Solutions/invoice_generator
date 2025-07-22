@@ -21,12 +21,12 @@ export async function sendInvoiceToApi(invoicePayload: any) {
   return { status: res.status, data };
 }
 
-// Sends a PDF invoice as email to client using Gmail API:
+// Sends a PDF invoice as email to client using Gmail API and remind for unpaid invoices.:
 export async function sendInvoiceByGmail(
   to: string,
   subject: string,
   text: string,
-  pdfPath: string
+  pdfPath?: string // Make optional
 ) {
   try {
     const refreshToken = await getRefreshToken();
@@ -42,23 +42,24 @@ export async function sendInvoiceByGmail(
 
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-    const pdfBuffer = await fs.readFile(pdfPath);
-    const htmlBody = generateInvoiceHtmlBody();
-
     const message = createMimeMessage();
     message.setSender("me");
     message.setRecipient(to);
     message.setSubject(subject);
 
     message.addMessage({ contentType: "text/plain", data: text });
-    message.addMessage({ contentType: "text/html", data: htmlBody });
-    message.addAttachment({
-      filename: path.basename(pdfPath),
-      contentType: "application/pdf",
-      data: pdfBuffer.toString("base64"),
-      encoding: "base64",
-    });
+    if (pdfPath) {
+      const pdfBuffer = await fs.readFile(pdfPath);
+      const htmlBody = generateInvoiceHtmlBody();
+      message.addMessage({ contentType: "text/html", data: htmlBody });
 
+      message.addAttachment({
+        filename: path.basename(pdfPath),
+        contentType: "application/pdf",
+        data: pdfBuffer.toString("base64"),
+        encoding: "base64",
+      });
+    }
     const encodedMessage = Buffer.from(message.asRaw())
       .toString("base64")
       .replace(/\+/g, "-")
@@ -285,16 +286,6 @@ export async function parseEmailContentForCreating(
   return payload;
 }
 
-export async function extractSenderAndBody(rawBase64: string): Promise<{
-  senderEmail: string;
-  bodyText: string;
-}> {
-  const parsed = await simpleParser(Buffer.from(rawBase64, "base64"));
-  const senderEmail = parsed.from?.text || "";
-  const bodyText = parsed.text || "";
-
-  return { senderEmail, bodyText };
-}
 // Parses the email to extract update actions:
 export async function parseEmailContentForUpdating(
   rawBase64Data: string,
@@ -422,6 +413,17 @@ export async function parseEmailContentForUpdating(
   return payload;
 }
 
+export async function extractSenderAndBody(rawBase64: string): Promise<{
+  senderEmail: string;
+  bodyText: string;
+}> {
+  const parsed = await simpleParser(Buffer.from(rawBase64, "base64"));
+  const senderEmail = parsed.from?.text || "";
+  const bodyText = parsed.text || "";
+
+  return { senderEmail, bodyText };
+}
+
 // Updates an existing invoice based on the provided payload.
 export async function updateInvoiceFromPayload(payload) {
   const {
@@ -530,36 +532,4 @@ export async function updateInvoiceFromPayload(payload) {
   await Invoice.update({ subtotal, total }, { where: { id: invoiceId } });
 
   return { status: "success", invoice_id: invoiceId };
-}
-
-export async function sendEmail(to: string, subject: string, text: string) {
-  const refreshToken = await getRefreshToken();
-  if (!refreshToken) throw new Error("Missing refresh token");
-
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID!,
-    process.env.GOOGLE_CLIENT_SECRET!,
-    process.env.GOOGLE_REDIRECT_URI!
-  );
-
-  oauth2Client.setCredentials({ refresh_token: refreshToken });
-
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-  const message = createMimeMessage();
-  message.setSender("me");
-  message.setRecipient(to);
-  message.setSubject(subject);
-  message.addMessage({ contentType: "text/plain", data: text });
-
-  const rawMessage = Buffer.from(message.asRaw())
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-
-  await gmail.users.messages.send({
-    userId: "me",
-    requestBody: { raw: rawMessage },
-  });
 }

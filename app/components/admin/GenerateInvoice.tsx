@@ -29,6 +29,9 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { InvoiceDatePicker } from "../ui/invoice-date-picker";
 import { ProjectDetails } from "@/database/models/interface";
+import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenuContent, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 
 interface InvoiceItem {
   description: string;
@@ -70,6 +73,13 @@ export default function GenerateInvoice() {
   const [placeholderStates, setPlaceholderStates] = useState<{
     [key: string]: boolean;
   }>({});
+
+// recurring invoice state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringInterval, setRecurringInterval] = useState<
+    "once a month" | "twice a month" | null
+  >(null);
+
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -157,6 +167,7 @@ export default function GenerateInvoice() {
         total: calculateTotal(),
         items: items.filter((item) => item.description.trim() !== ""),
         status: "draft",
+        recurring_interval: isRecurring ? recurringInterval : null,
       };
 
       const response = await fetch("/api/invoices", {
@@ -182,6 +193,7 @@ export default function GenerateInvoice() {
       setIsLoading(false);
     }
   };
+ 
 
   return (
     <div className="space-y-6">
@@ -453,6 +465,48 @@ export default function GenerateInvoice() {
                 <span>Total:</span>
                 <span>${calculateTotal().toFixed(2)}</span>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Recurring Invoice</Label>
+              <div className="flex items-center space-x-4">
+                <Switch
+                  checked={isRecurring}
+                  onCheckedChange={(checked) => {
+                    setIsRecurring(checked);
+                    if (!checked) setRecurringInterval(null); // reset if turned off
+                  }}
+                />
+                <span>{isRecurring ? "Yes" : "No"}</span>
+              </div>
+
+              {isRecurring && (
+                <div className="mt-2">
+                  <Label className="text-sm font-medium">
+                    Recurring Interval
+                  </Label>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="px-3 py-2 border rounded-md text-sm w-full text-left">
+                      {recurringInterval || "Select interval"}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48">
+                      <DropdownMenuRadioGroup
+                        value={recurringInterval ?? ""}
+                        onValueChange={(val) =>
+                          setRecurringInterval(val as any)
+                        }
+                      >
+                        <DropdownMenuRadioItem value="once a month">
+                          Once a month
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="twice a month">
+                          Twice a month
+                        </DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end">

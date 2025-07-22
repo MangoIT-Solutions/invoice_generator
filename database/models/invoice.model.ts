@@ -42,7 +42,7 @@ export class Invoice extends Model<
   declare payment_charges: number;
   declare total: number;
   declare lastUnpaidReminderDate?: Date;
-  declare recurring_interval?: "none" | "monthly" | "15days";
+  declare recurring_interval?:null| "once a month" | "twice a month";
   declare status: "draft" | "sent" | "fully_paid" | "partially_paid";
   declare created_at: CreationOptional<Date>;
 }
@@ -105,7 +105,7 @@ Invoice.init(
       allowNull: true,
     },
     recurring_interval: {
-      type: DataTypes.ENUM("none", "monthly", "15days"),
+      type: DataTypes.ENUM("none", "once a month", "twice a month"),
       allowNull: true,
       defaultValue: "none",
     },

@@ -1,26 +1,32 @@
 import { Invoice } from "../database/models/invoice.model";
-import { sendEmail } from "../lib/utilsServer";
+import { sendInvoiceByGmail } from "../lib/utilsServer";
 import Config from "../database/models/config.model";
+import InvoicePayment from "@/database/models/invoice_payment.model";
+import { Op } from "sequelize";
 
-export async function checkUnpaidInvoicesAndSendReminder() {
-  console.log("✅ Payment Reminder Cron Started");
-
+export async function lastUnpaidReminderDate() {
   try {
-    // Step 1: Get dynamic reminder gap
-    const config = await Config.findOne({
+    // Get reminder gap from config
+    const configData = await Config.findOne({
       where: { keyIndex: "upaidInvoiceReminderDays" },
     });
-    const remindAfterDays = config?.value ? parseInt(config.value) : 15;
-    console.log("🔄 Reminder gap (days):", remindAfterDays);
 
-    // Step 2: Get invoices that are unpaid
+    if (!configData || !configData.value) {
+      console.warn("⚠️ Reminder config not found. Skipping cron.");
+      return;
+    }
+
+    const remindAfterDays = Number(configData.value);
     const invoices = await Invoice.findAll({
       where: {
         status: ["sent", "partially paid"],
       },
     });
-    console.log(`🔎 Found ${invoices.length} unpaid/partially paid invoices`);
-
+    
+    if (invoices.length === 0) {
+      console.log("No unpaid invoices found.");
+      return;
+    }
     const today = new Date();
 
     for (const invoice of invoices) {
@@ -32,26 +38,24 @@ export async function checkUnpaidInvoicesAndSendReminder() {
       const daysSinceCreated = Math.floor(
         (today.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
       );
+
       const daysSinceLastReminder = lastReminder
         ? Math.floor(
             (today.getTime() - lastReminder.getTime()) / (1000 * 60 * 60 * 24)
           )
         : null;
-      console.log(
-        `📦 Invoice ${invoice.invoice_number}: ${daysSinceCreated} days old, Last reminded: ${daysSinceLastReminder} days ago`
-      );
 
       const shouldSend =
         (!lastReminder && daysSinceCreated >= remindAfterDays) ||
-        (lastReminder &&
+        (lastReminder !== null &&
           daysSinceLastReminder !== null &&
           daysSinceLastReminder >= remindAfterDays);
 
       if (shouldSend) {
-        await sendEmail(
+        await sendInvoiceByGmail(
           invoice.client_email,
-          `Payment Reminder: Invoice #${invoice.invoice_number}`,
-          `Please complete your payment for Invoice #${invoice.invoice_number}.`
+          `⏰ Payment Reminder: Invoice #${invoice.invoice_number}`,
+          `This is a friendly reminder to complete your payment for Invoice #${invoice.invoice_number}.\n\nThank you.`
         );
 
         await Invoice.update(
@@ -60,7 +64,7 @@ export async function checkUnpaidInvoicesAndSendReminder() {
         );
 
         console.log(
-          `✔ Reminder sent to ${invoice.client_email} for invoice ${invoice.invoice_number}`
+          `✔ Reminder sent to ${invoice.client_email} for Invoice #${invoice.invoice_number}`
         );
       }
     }

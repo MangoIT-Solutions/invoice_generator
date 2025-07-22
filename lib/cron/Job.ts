@@ -14,11 +14,11 @@ export function startCronJob() {
     }
   });
 
-  // 💰 Payment reminder every 5 min
+  // 💰 Payment reminder every 1 min
   cron.schedule("*/1 * * * *", async () => {
     try {
       console.log("💳 Running payment reminder check...");
-      await axios.get("http://localhost:3000/api/bankEmail");
+      await axios.get("http://localhost:3000/api/invoiceReminderEmail");
       console.log("✅ Payment reminder check completed");
     } catch (error) {
       console.error("❌ Payment reminder cron error:", error);
