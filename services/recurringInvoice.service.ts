@@ -28,7 +28,7 @@ export async function processRecurringInvoices(today: Date = new Date()) {
     const isOnce = invoice.recurring_interval === "once a month";
     const isTwice = invoice.recurring_interval === "twice a month";
     const lastSent = invoice.lastInvoiceSendDate || invoice.created_at;
-    
+
     //  1. Timing Logic
     if (isOnce) {
       const nextInvoiceDate = addMonths(new Date(lastSent), 1);
@@ -91,7 +91,7 @@ export async function processRecurringInvoices(today: Date = new Date()) {
       bank,
       pdfFileName
     );
-    
+
     //  5. Send Email
     const subject = `📄 Recurring Invoice #${invoiceNumber} - Mango IT Solutions`;
     const message = `Dear ${invoice.client_name},\n\nPlease find attached your recurring invoice #${invoiceNumber}.\n\nTotal Amount: ₹${invoice.total}\n\nThanks.`;
