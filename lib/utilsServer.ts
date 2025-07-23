@@ -7,7 +7,6 @@ import { getAutomateUser, getRefreshToken } from "@/services/google.service";
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
 import { Op } from "sequelize";
-import { generateInvoiceHtmlBody } from "@/lib/utils";
 
 // Sends parsed invoice data to API endpoint (`/api/invoices`) to create a new invoice record in DB.
 export async function sendInvoiceToApi(invoicePayload: any) {
@@ -50,8 +49,7 @@ export async function sendInvoiceByGmail(
     message.addMessage({ contentType: "text/plain", data: text });
     if (pdfPath) {
       const pdfBuffer = await fs.readFile(pdfPath);
-      const htmlBody = generateInvoiceHtmlBody();
-      message.addMessage({ contentType: "text/html", data: htmlBody });
+      message.addMessage({ contentType: "text/html", data: text });
 
       message.addAttachment({
         filename: path.basename(pdfPath),
@@ -94,7 +92,6 @@ export async function parseEmailsFromGmail() {
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
   const accessToken = await oauth2Client.getAccessToken();
-  console.log("Access Token:", accessToken);
   if (!accessToken) {
     throw new Error("Failed to get access token");
   }

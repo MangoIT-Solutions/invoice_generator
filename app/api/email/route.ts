@@ -21,13 +21,12 @@ export async function GET() {
       let invoiceNumber: string | undefined;
 
       if (invoice.type === "update") {
-        // ✅ Update invoice
+        //  Update invoice
         const updateResult = await updateInvoiceFromPayload(invoice.payload);
         invoiceId = updateResult.invoice_id;
         invoiceNumber = invoice.payload.invoice_number;
-        console.log("✅ Updated invoice:", invoiceId);
 
-        // ✅ Fetch updated invoice and items using Sequelize (as model instances)
+        // Fetch updated invoice and items using Sequelize (as model instances)
         const updatedInvoice = await Invoice.findByPk(invoiceId, {
           include: [{ model: InvoiceItem, as: "items" }],
         });
@@ -36,11 +35,11 @@ export async function GET() {
           throw new Error("Updated invoice not found");
         }
 
-        // ✅ Fetch company and bank info (update if table name differs)
+        //  Fetch company and bank info (update if table name differs)
         const company = await getCompanyConfig();
         const bank = await getBankDetails();
 
-        // ✅ Generate PDF
+        // Generate PDF
         await generateInvoicePdf(
           updatedInvoice as any, // InvoiceWithItems type
           company,
@@ -48,18 +47,18 @@ export async function GET() {
           `invoice-${invoiceNumber}.pdf`
         );
       } else {
-        // ✅ Create invoice
+        // Create invoice
         const res = await sendInvoiceToApi(invoice.payload);
         invoiceId = res?.data?.invoiceId || res?.data?.id;
         invoiceNumber = res?.data?.invoiceNumber;
-        console.log("🆕 Created invoice:", invoiceId);
       }
 
       if (!invoiceId || !invoiceNumber) {
         throw new Error("Invoice ID or number missing after create/update");
       }
+    
 
-      // ✅ PDF path
+      // PDF path
       const pdfPath = path.join(
         process.cwd(),
         "public",

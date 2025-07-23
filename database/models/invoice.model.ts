@@ -42,9 +42,12 @@ export class Invoice extends Model<
   declare payment_charges: number;
   declare total: number;
   declare lastUnpaidReminderDate?: Date;
-  declare recurring_interval?:null| "once a month" | "twice a month";
+  declare lastInvoiceSendDate?: Date | null;
+  declare recurring_interval?: null | "once a month" | "twice a month";
   declare status: "draft" | "sent" | "fully_paid" | "partially_paid";
   declare created_at: CreationOptional<Date>;
+  static lastInvoiceSendDate: Date;
+  declare items?: InvoiceItem[];
 }
 
 Invoice.init(
@@ -107,13 +110,16 @@ Invoice.init(
     recurring_interval: {
       type: DataTypes.ENUM("none", "once a month", "twice a month"),
       allowNull: true,
-      defaultValue: "none",
+      defaultValue: null, // Use null for no recurring
     },
     status: {
       type: DataTypes.ENUM("draft", "sent", "fully_paid", "partially_paid"),
       defaultValue: "draft",
     },
-
+    lastInvoiceSendDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -128,3 +134,4 @@ Invoice.init(
 
 Invoice.belongsTo(User, { foreignKey: "user_id", as: "user" });
 Invoice.hasMany(InvoiceItem, { foreignKey: "invoice_id", as: "items" });
+InvoiceItem.belongsTo(Invoice, { foreignKey: "invoice_id" });

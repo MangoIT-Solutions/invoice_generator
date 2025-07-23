@@ -107,14 +107,3 @@ export function formatPeriod(period: string): string {
   // Fallback: return original string
   return trimmedPeriod;
 }
-
-export function generateInvoiceHtmlBody() {
-  return `
-    <div style="font-family: Arial, sans-serif; color: #333;">
-      <h4>Dear Customer</h4>
-      <p>Thank you for your business. Please find your invoice attached as a PDF.</p>
-      <p>If you have any questions, feel free to reply to this email.</p>
-      <p style="margin-top: 30px;">Warm regards,<br><strong>The InvoiceBot Team</strong></p>
-    </div>
-  `;
-}

@@ -3,6 +3,10 @@ import { sendInvoiceByGmail } from "../lib/utilsServer";
 import Config from "../database/models/config.model";
 import InvoicePayment from "@/database/models/invoice_payment.model";
 import { Op } from "sequelize";
+import { sendInvoiceToApi } from "@/lib/utilsServer";
+import { generateInvoicePdf } from "@/lib/invoicePdf";
+import Company from "@/database/models/company.model";
+import BankDetails from "@/database/models/bank-details.model";
 
 export async function lastUnpaidReminderDate() {
   try {
@@ -12,7 +16,7 @@ export async function lastUnpaidReminderDate() {
     });
 
     if (!configData || !configData.value) {
-      console.warn("⚠️ Reminder config not found. Skipping cron.");
+      console.warn(" Reminder config not found. Skipping cron.");
       return;
     }
 
@@ -22,7 +26,7 @@ export async function lastUnpaidReminderDate() {
         status: ["sent", "partially paid"],
       },
     });
-    
+
     if (invoices.length === 0) {
       console.log("No unpaid invoices found.");
       return;
@@ -70,5 +74,6 @@ export async function lastUnpaidReminderDate() {
     }
   } catch (err) {
     console.error("❌ Error in payment reminder check:", err);
+    throw err;
   }
 }

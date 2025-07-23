@@ -8,9 +8,9 @@ module.exports = {
     });
 
     await queryInterface.addColumn("invoices", "recurring_interval", {
-      type: Sequelize.ENUM( "once a month", "twice a month"),
+      type: Sequelize.ENUM("once a month", "twice a month"),
       allowNull: true,
-      defaultValue: "none",
+      defaultValue: "null",
     });
 
     // First remove the existing ENUM and re-add with new values

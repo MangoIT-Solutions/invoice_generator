@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     await lastUnpaidReminderDate();
-    return NextResponse.json({ message: "Payment reminder executed" });
+    return NextResponse.json({ message: "Payment reminder sent" });
   } catch (error: any) {
     console.error("Payment Read Error:", error);
     return NextResponse.json(

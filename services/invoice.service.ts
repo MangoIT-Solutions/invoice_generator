@@ -1,7 +1,8 @@
 // services/invoice.service.ts
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-import InvoiceConfig from "@/database/models/config.model";
+// import InvoiceConfig from "@/database/models/config.model";
+import Config from "@/database/models/config.model";
 import { User } from "@/database/models/user.model";
 import { Company } from "@/database/models/company.model";
 import { BankDetails } from "@/database/models/bank-details.model";
@@ -35,22 +36,52 @@ export async function createInvoice(
   }
 }
 
+
 export async function getNextInvoiceNumber(): Promise<string> {
   try {
-    const config = await InvoiceConfig.findOne();
-    if (!config) throw new Error("InvoiceConfig not found");
+    // Fetch starting number
+    let startingConfig = await Config.findOne({
+      where: { keyIndex: "starting_number" },
+    });
+    if (!startingConfig) {
+      startingConfig = await Config.create({
+        keyIndex: "starting_number",
+        value: "1000",
+      });
+    }
 
-    const currentNumber =
-      config.current_number < config.starting_number
-        ? config.starting_number
-        : config.current_number;
+    const startingNumber = parseInt(startingConfig.value || "1000", 10);
 
-    config.current_number = currentNumber + 1;
-    await config.save();
+    // Fetch current number
+    let currentConfig = await Config.findOne({
+      where: { keyIndex: "current_number" },
+    });
+    if (!currentConfig) {
+      currentConfig = await Config.create({
+        keyIndex: "current_number",
+        value: startingNumber.toString(),
+      });
+    }
 
-    return currentNumber.toString();
+    const currentNumber = parseInt(
+      currentConfig.value || startingNumber.toString(),
+      10
+    );
+
+    // Ensure current >= starting
+    const nextNumber =
+      currentNumber < startingNumber ? startingNumber + 1 : currentNumber + 1;
+
+    // Save updated current number
+    currentConfig.value = nextNumber.toString();
+    await currentConfig.save();
+
+    // Return current invoice number (before increment)
+    return (
+      currentNumber < startingNumber ? startingNumber : currentNumber
+    ).toString();
   } catch (error) {
-    console.error("Error getting next invoice number:", error);
+    console.error("❌ Error generating next invoice number:", error);
     return "1000";
   }
 }
