@@ -36,7 +36,6 @@ export async function createInvoice(
   }
 }
 
-
 export async function getNextInvoiceNumber(): Promise<string> {
   try {
     // Fetch starting number

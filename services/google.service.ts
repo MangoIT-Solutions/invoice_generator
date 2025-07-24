@@ -40,16 +40,3 @@ export async function getAutomateUser(): Promise<number> {
 
   return newUser.getDataValue("id");
 }
-
-// export async function getConfigValue(key: string): Promise<string | null> {
-//   const config = await Config.findOne({ where: { keyIndex: key } });
-//   return config?.getDataValue("value") || null;
-// }
-
-// export async function setConfigValue(key: string, value: string) {
-//   await Config.upsert({ keyIndex: key, value });
-// }
-
-// export async function deleteConfigValue(key: string) {
-//   await Config.destroy({ where: { keyIndex: key } });
-// }

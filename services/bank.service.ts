@@ -1,5 +1,9 @@
 // services/bank.service.ts
 import { BankDetails } from "@/database/models/bank-details.model";
+import { parseBankMailsFromGmail } from "@/lib/utilsServer";
+import { Invoice } from "@/database/models/invoice.model";
+import InvoicePayment from "@/database/models/invoice_payment.model";
+import Config from "@/database/models/config.model";
 
 export async function getBankDetails() {
   try {
@@ -45,6 +49,81 @@ export async function updateBankDetails(data: any) {
     }
   } catch (error) {
     console.error("Error updating bank details:", error);
+    throw error;
+  }
+}
+
+export async function processBankMail() {
+  try {
+    const parsedBankMails = await parseBankMailsFromGmail();
+    const results = [];
+
+    const marginConfig = await Config.findOne({
+      where: { keyIndex: "marginAmountForUnduePayment" },
+    });
+
+    if (!marginConfig) {
+      throw new Error("Config for marginAmountForUnduePayment not found");
+    }
+
+    const allowedMargin = Number(marginConfig.value);
+
+    for (const emailData of parsedBankMails) {
+      if (emailData.type !== "bank_mail") continue;
+
+      const payload = emailData.payload;
+      if (!payload) continue;
+
+      const invoiceNumber = payload.invoice_number;
+      const amountReceived = parseFloat(payload.amount);
+      const transactionId = payload.transaction_id || null;
+
+      if (!invoiceNumber || isNaN(amountReceived)) {
+        console.warn("Invalid email data:", emailData);
+        continue;
+      }
+
+      const existingInvoice = await Invoice.findOne({
+        where: { invoice_number: invoiceNumber },
+      });
+
+      if (!existingInvoice) {
+        console.warn(`Invoice not found for number: ${invoiceNumber}`);
+        continue;
+      }
+
+      const total = Number(existingInvoice.total);
+      const margin = amountReceived - total;
+      const isFullyPaid = margin >= -allowedMargin;
+
+      // ✅ Save to invoice_payment table
+      await InvoicePayment.create({
+        invoice_id: existingInvoice.id,
+        amount: amountReceived,
+        transaction_id: transactionId,
+        date: new Date(),
+      });
+
+      // ✅ Update invoice status
+      await existingInvoice.update({
+        status: isFullyPaid ? "fully_paid" : "partially_paid",
+      });
+
+      if (!isFullyPaid) {
+        console.warn(
+          `Invoice ${invoiceNumber} is not fully paid. Margin: ₹${margin}`
+        );
+      }
+
+      results.push({
+        invoice_id: existingInvoice.id,
+        margin,
+        partially_paid: !isFullyPaid,
+      });
+    }
+    return results;
+  } catch (error) {
+    console.error("Error processing bank mail:", error);
     throw error;
   }
 }

@@ -56,7 +56,6 @@ export async function GET() {
       if (!invoiceId || !invoiceNumber) {
         throw new Error("Invoice ID or number missing after create/update");
       }
-    
 
       // PDF path
       const pdfPath = path.join(

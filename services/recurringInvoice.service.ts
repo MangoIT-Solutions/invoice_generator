@@ -12,7 +12,8 @@ import { addMonths, isSameDay } from "date-fns";
 
 export async function processRecurringInvoices(today: Date = new Date()) {
   const day = today.getDate();
-
+  
+  //  Fetch all recurring invoices
   const recurringInvoices = await Invoice.findAll({
     where: {
       recurring_interval: {
@@ -23,7 +24,7 @@ export async function processRecurringInvoices(today: Date = new Date()) {
   });
 
   const results = [];
-
+ 
   for (const invoice of recurringInvoices) {
     const isOnce = invoice.recurring_interval === "once a month";
     const isTwice = invoice.recurring_interval === "twice a month";

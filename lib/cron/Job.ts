@@ -35,6 +35,17 @@ export function startCronJob() {
       console.error("❌ Invoice generation cron error:", error);
     }
   });
+
+  // 🏦 Bank mail processing every 1 mi
+  cron.schedule("*/1 * * * *", async () => {
+    try {
+      console.log("🏦 Running bank mail processing cron job...");
+      await axios.get("http://localhost:3000/api/bankMail");
+      console.log("✅ Bank mail processing completed");
+    } catch (error) {
+      console.error("❌ Bank mail cron error:", error);
+    }
+  });
 }
 
 // Start the cron jobs

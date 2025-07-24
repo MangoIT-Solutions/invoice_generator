@@ -175,6 +175,69 @@ export async function parseEmailsFromGmail() {
   return { gmail, parsedInvoices, accessToken };
 }
 
+// Reads unread gmail for bank mails
+export async function parseBankMailsFromGmail() {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken) throw new Error("No refresh token in DB");
+
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+    process.env.GOOGLE_REDIRECT_URI!
+  );
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  const label = process.env.BANK_QUERY_LABEL || "bankMail";
+  const subjectBankMail = process.env.GMAIL_BANKMAIL_SUBJECT || "Bank Mail";
+  const userId = await getAutomateUser();
+  const parsedBankMails = [];
+
+  const response = await gmail.users.messages.list({
+    userId: "me",
+    q: `label:${label} is:unread`,
+    maxResults: 5,
+  });
+
+  const messages = response.data.messages || [];
+
+  for (const message of messages) {
+    if (!message.id) continue;
+
+    try {
+      const rawMsg = await gmail.users.messages.get({
+        userId: "me",
+        id: message.id,
+        format: "raw",
+      });
+
+      const parsedEmail = await simpleParser(
+        Buffer.from(rawMsg.data.raw!, "base64")
+      );
+      const subject = (parsedEmail.subject || "").toLowerCase();
+
+      if (subject.includes(subjectBankMail.toLowerCase())) {
+        const payload = await parseBankMailEmail(rawMsg.data.raw!, userId);
+        parsedBankMails.push({ id: message.id, payload, type: "bank_mail" });
+
+        // ✅ Mark email as read
+        await gmail.users.messages.modify({
+          userId: "me",
+          id: message.id,
+          requestBody: { removeLabelIds: ["UNREAD"] },
+        });
+      }
+    } catch (err) {
+      console.warn(
+        `⚠️ Skipping bankMail ${message.id} — ${(err as Error).message}`
+      );
+    }
+  }
+
+  return parsedBankMails;
+}
+
 // Parses the body of a Gmail email to extract invoice fields:
 export async function parseEmailContentForCreating(
   rawBase64Data: string,
@@ -405,6 +468,71 @@ export async function parseEmailContentForUpdating(
 
   if (!payload.invoice_number) {
     throw new Error("Missing Invoice Number for update");
+  }
+
+  return payload;
+}
+
+// Parses the body of a Gmail email to extract bank email fields:
+export async function parseBankMailEmail(
+  rawBase64Data: string,
+  userId: number
+) {
+  const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
+
+  if (!bodyText || !senderEmail) {
+    throw new Error("No body text or Email found in email");
+  }
+
+  const lines = bodyText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const payload: any = {
+    user_id: userId,
+    sender_email: senderEmail,
+    invoice_number: "",
+    transaction_id: "",
+    amount: 0,
+    payment_date: "",
+    status: "unpaid",
+  };
+
+  const getValue = (str: string, fieldName: string = "Unknown"): string => {
+    const parts = str.split(":");
+    if (parts.length < 2) {
+      throw new Error(`Missing ':' separator for ${fieldName}`);
+    }
+    const value = parts.slice(1).join(":").trim();
+    if (!value) {
+      throw new Error(`Empty value for required field: ${fieldName}`);
+    }
+    return value;
+  };
+
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+
+    if (lower.startsWith("invoice number:")) {
+      payload.invoice_number = getValue(line, "Invoice Number");
+    } else if (lower.startsWith("transaction id:")) {
+      payload.transaction_id = getValue(line, "Transaction ID");
+    } else if (lower.startsWith("amount:")) {
+      payload.amount = parseFloat(getValue(line, "Amount"));
+    } else if (lower.startsWith("date:")) {
+      payload.payment_date = getValue(line, "Date");
+    }
+  }
+
+  // Final validation
+  if (
+    !payload.invoice_number ||
+    !payload.transaction_id ||
+    !payload.amount ||
+    !payload.payment_date
+  ) {
+    throw new Error("Missing required payment reminder fields");
   }
 
   return payload;
