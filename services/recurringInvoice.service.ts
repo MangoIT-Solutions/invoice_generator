@@ -4,12 +4,13 @@ import { InvoiceItem } from "@/database/models/invoice-item.model";
 import { getCompanyConfig } from "@/services/company.service";
 import { getBankDetails } from "@/services/bank.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
-import { sendInvoiceByGmail } from "@/lib/services/gmailSender";
+import { sendInvoiceByGmail } from "@/lib/server/gmail/gmail.service";
 import { getNextInvoiceNumber } from "@/services/invoice.service";
 import path from "path";
 import { Op } from "sequelize";
 import { addMonths, isSameDay } from "date-fns";
-import { getInvoiceEmailContent, getInvoicePdfPaths } from "@/lib/email.utils";
+import { getInvoiceEmailContent, } from "@/lib/server/gmail/gmail.utils";
+import {getInvoicePdfPaths } from "@/lib/invoicePdf"
 
 export async function processRecurringInvoices(today: Date = new Date()) {
   const day = today.getDate();

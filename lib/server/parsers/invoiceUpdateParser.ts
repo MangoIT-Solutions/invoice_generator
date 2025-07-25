@@ -1,4 +1,4 @@
-import { extractSenderAndBody } from "../email.utils";
+import { extractSenderAndBody } from "../gmail/gmail.utils";
 
 // Parses the email to extract update actions:
 export async function parseEmailContentForUpdating(

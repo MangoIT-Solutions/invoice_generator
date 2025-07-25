@@ -1,4 +1,4 @@
-import { extractSenderAndBody } from "../email.utils";
+import { extractSenderAndBody } from "../gmail/gmail.utils";
 
 export async function parseEmailContentForCreating(
   rawBase64Data: string,

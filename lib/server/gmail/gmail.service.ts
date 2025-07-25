@@ -1,30 +1,18 @@
 import { getAutomateUser, getRefreshToken } from "@/services/google.service";
 import { google } from "googleapis";
 import { simpleParser } from "mailparser";
-import { parseEmailContentForUpdating } from "../parsers/invoiceUpdateParser";
-import { parseEmailContentForCreating } from "../parsers/invoiceCreateParser";
-import { parseBankMailEmail } from "../parsers/bankMailParser";
-import { markEmailAsRead } from "../email.utils";
+import { parseEmailContentForUpdating } from "@/lib/server/parsers/invoiceUpdateParser";
+import { parseEmailContentForCreating } from "@/lib/server/parsers/invoiceCreateParser";
+import { parseBankMailEmail } from "@/lib/server/parsers/bankMailParser";
+import { markEmailAsRead } from "@/lib/server/gmail/gmail.utils";
+import { createMimeMessage } from "mimetext";
+import { getGmailClient } from "@/lib/server/gmail/gmail.auth";
+import path from "path";
+import fs from "fs/promises";
 
 // Reads unread Gmail emails with a specific label and subject.
 export async function parseEmailsFromGmail() {
-  const refreshToken = await getRefreshToken();
-  if (!refreshToken) throw new Error("No refresh token in DB");
-  console.log("refreshToken:", refreshToken);
-
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID!,
-    process.env.GOOGLE_CLIENT_SECRET!,
-    process.env.GOOGLE_REDIRECT_URI!
-  );
-
-  oauth2Client.setCredentials({ refresh_token: refreshToken });
-
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-  const accessToken = await oauth2Client.getAccessToken();
-  if (!accessToken) {
-    throw new Error("Failed to get access token");
-  }
+  const { gmail, accessToken } = await getGmailClient();
 
   const label = process.env.GMAIL_QUERY_LABEL || "invoices";
   const subjectCreate = process.env.GMAIL_QUERY_SUBJECT || "Invoice Request";
@@ -51,7 +39,6 @@ export async function parseEmailsFromGmail() {
   const messages = response.data.messages || [];
   const parsedInvoices = [];
   const userId = await getAutomateUser();
-  console.log("Automate User ID:", userId);
 
   for (const message of messages) {
     if (!message.id) continue;
@@ -72,7 +59,6 @@ export async function parseEmailsFromGmail() {
         continue;
       }
       const subject = parsedEmail.subject || "";
-      console.log("📧 Email subject:", subject);
 
       if (subject.includes("Invoice Update")) {
         const invoicePayload = await parseEmailContentForUpdating(
@@ -107,17 +93,7 @@ export async function parseEmailsFromGmail() {
 
 // Reads unread gmail for bank mails
 export async function parseBankMailsFromGmail() {
-  const refreshToken = await getRefreshToken();
-  if (!refreshToken) throw new Error("No refresh token in DB");
-
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID!,
-    process.env.GOOGLE_CLIENT_SECRET!,
-    process.env.GOOGLE_REDIRECT_URI!
-  );
-  oauth2Client.setCredentials({ refresh_token: refreshToken });
-
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+  const { gmail } = await getGmailClient();
 
   const label = process.env.BANK_QUERY_LABEL || "bankMail";
   const subjectBankMail = process.env.GMAIL_BANKMAIL_SUBJECT || "Bank Mail";
@@ -153,7 +129,6 @@ export async function parseBankMailsFromGmail() {
 
         //  Mark email as read
         await markEmailAsRead(gmail, message.id);
-
       }
     } catch (err) {
       console.warn(
@@ -163,4 +138,49 @@ export async function parseBankMailsFromGmail() {
   }
 
   return parsedBankMails;
+}
+
+// Sends a PDF invoice as email to client using Gmail API and remind for unpaid invoices.:
+export async function sendInvoiceByGmail(
+  to: string,
+  subject: string,
+  text: string,
+  pdfPath?: string
+) {
+  try {
+    const { gmail } = await getGmailClient();
+
+    const message = createMimeMessage();
+    message.setSender("me");
+    message.setRecipient(to);
+    message.setSubject(subject);
+
+    message.addMessage({ contentType: "text/plain", data: text });
+    if (pdfPath) {
+      const pdfBuffer = await fs.readFile(pdfPath);
+      message.addMessage({ contentType: "text/html", data: text });
+
+      message.addAttachment({
+        filename: path.basename(pdfPath),
+        contentType: "application/pdf",
+        data: pdfBuffer.toString("base64"),
+        encoding: "base64",
+      });
+    }
+    const encodedMessage = Buffer.from(message.asRaw())
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    const res = await gmail.users.messages.send({
+      userId: "me",
+      requestBody: { raw: encodedMessage },
+    });
+
+    return res;
+  } catch (error) {
+    console.error(" Failed to send invoice email:", error);
+    throw error;
+  }
 }

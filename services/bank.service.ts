@@ -3,7 +3,7 @@ import { BankDetails } from "@/database/models/bank-details.model";
 import { Invoice } from "@/database/models/invoice.model";
 import InvoicePayment from "@/database/models/invoice_payment.model";
 import Config from "@/database/models/config.model";
-import { parseBankMailsFromGmail } from "@/lib/services/gmailReader";
+import { parseBankMailsFromGmail } from "@/lib/server/gmail/gmail.service";
 
 export async function getBankDetails() {
   try {
@@ -96,7 +96,7 @@ export async function processBankMail() {
       const margin = amountReceived - total;
       const isFullyPaid = margin >= -allowedMargin;
 
-      // ✅ Save to invoice_payment table
+      // Save to invoice_payment table
       await InvoicePayment.create({
         invoice_id: existingInvoice.id,
         amount: amountReceived,
@@ -104,7 +104,7 @@ export async function processBankMail() {
         date: new Date(),
       });
 
-      // ✅ Update invoice status
+      // Update invoice status
       await existingInvoice.update({
         status: isFullyPaid ? "fully_paid" : "partially_paid",
       });

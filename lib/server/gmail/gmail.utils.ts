@@ -1,8 +1,6 @@
-import { gmail_v1 } from "googleapis";
 import { simpleParser } from "mailparser";
-import path from "path";
+import { gmail_v1 } from "googleapis";
 
-type EmailType = "normal" | "reminder" | "recurring";
 
 export async function extractSenderAndBody(rawBase64: string): Promise<{
   senderEmail: string;
@@ -14,6 +12,7 @@ export async function extractSenderAndBody(rawBase64: string): Promise<{
 
   return { senderEmail, bodyText };
 }
+
 
 export async function markEmailAsRead(
   gmail: gmail_v1.Gmail,
@@ -28,11 +27,7 @@ export async function markEmailAsRead(
   });
 }
 
-export function getInvoicePdfPaths(invoiceNumber: number) {
-  const fileName = `invoice-${invoiceNumber}.pdf`;
-  const filePath = path.join(process.cwd(), "public", "invoices", fileName);
-  return { fileName, filePath };
-}
+type EmailType = "normal" | "reminder" | "recurring";
 
 export function getInvoiceEmailContent(
   type: EmailType,

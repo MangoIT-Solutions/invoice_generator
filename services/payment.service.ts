@@ -1,7 +1,7 @@
 import { Invoice } from "../database/models/invoice.model";
-import { sendInvoiceByGmail } from "../lib/services/gmailSender";
+import { sendInvoiceByGmail } from "@/lib/server/gmail/gmail.service";
 import Config from "../database/models/config.model";
-import { getInvoiceEmailContent } from "@/lib/email.utils";
+import { getInvoiceEmailContent } from "@/lib/server/gmail/gmail.utils";
 
 export async function lastUnpaidReminderDate() {
   try {

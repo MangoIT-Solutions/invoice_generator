@@ -1,4 +1,4 @@
-import { extractSenderAndBody } from "../email.utils";
+import { extractSenderAndBody } from "../gmail/gmail.utils";
 
 // Parses the body of a Gmail email to extract bank email fields:
 export async function parseBankMailEmail(

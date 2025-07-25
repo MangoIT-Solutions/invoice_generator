@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { parseEmailsFromGmail } from "@/lib/services/gmailReader";
+import { parseEmailsFromGmail } from "@/lib/server/gmail/gmail.service";
 import {
-  sendInvoiceToApi,
   sendInvoiceByGmail,
-} from "@/lib/services/gmailSender";
+} from "@/lib/server/gmail/gmail.service";
 import { updateInvoiceFromPayload } from "@/services/invoice.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
 import { getCompanyConfig } from "@/services/company.service";
@@ -12,10 +11,11 @@ import path from "path";
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
 import {
-  markEmailAsRead,
-  getInvoicePdfPaths,
   getInvoiceEmailContent,
-} from "@/lib/email.utils";
+} from "@/lib/server/gmail/gmail.utils";
+import {getInvoicePdfPaths} from "@/lib/invoicePdf"
+import {markEmailAsRead} from "@/lib/server/gmail/gmail.utils"
+import { sendInvoiceToApi } from "@/lib/client/api.utils";
 
 export async function GET() {
   try {
