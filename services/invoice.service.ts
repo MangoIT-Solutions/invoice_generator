@@ -1,7 +1,6 @@
 // services/invoice.service.ts
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-// import InvoiceConfig from "@/database/models/config.model";
 import Config from "@/database/models/config.model";
 import { User } from "@/database/models/user.model";
 import { Company } from "@/database/models/company.model";

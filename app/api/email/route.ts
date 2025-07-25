@@ -47,7 +47,7 @@ export async function GET() {
 
         // Generate PDF
         await generateInvoicePdf(
-          updatedInvoice as any, // InvoiceWithItems type
+          updatedInvoice as any, 
           company,
           bank,
           `invoice-${invoiceNumber}.pdf`

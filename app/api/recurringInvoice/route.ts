@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { processRecurringInvoices } from "@/services/recurringInvoice.service";
 
 export async function GET() {
-  console.log("Received GET request for recurring invoices");
   try {
     const results = await processRecurringInvoices();
     return NextResponse.json({
