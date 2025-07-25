@@ -108,9 +108,9 @@ Invoice.init(
       allowNull: true,
     },
     recurring_interval: {
-      type: DataTypes.ENUM("none", "once a month", "twice a month"),
+      type: DataTypes.ENUM("once a month", "twice a month"),
       allowNull: true,
-      defaultValue: null, // Use null for no recurring
+      defaultValue: null,
     },
     status: {
       type: DataTypes.ENUM("draft", "sent", "fully_paid", "partially_paid"),

@@ -58,6 +58,7 @@ export async function processRecurringInvoices(today: Date = new Date()) {
       created_at: today,
       recurring_interval: null,
       lastInvoiceSendDate: null,
+      
     });
     // 3. Duplicate Items
     const itemsToCreate = (invoice.items ?? []).map((item) => ({
