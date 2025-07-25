@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
+import { simpleParser } from "mailparser";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -107,3 +108,5 @@ export function formatPeriod(period: string): string {
   // Fallback: return original string
   return trimmedPeriod;
 }
+
+

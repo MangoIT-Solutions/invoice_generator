@@ -1,9 +1,10 @@
 // services/bank.service.ts
 import { BankDetails } from "@/database/models/bank-details.model";
-import { parseBankMailsFromGmail } from "@/lib/utilsServer";
+// import { parseBankMailsFromGmail } from "@/lib/utilsServer";
 import { Invoice } from "@/database/models/invoice.model";
 import InvoicePayment from "@/database/models/invoice_payment.model";
 import Config from "@/database/models/config.model";
+import { parseBankMailsFromGmail } from "@/lib/services/gmailReader";
 
 export async function getBankDetails() {
   try {

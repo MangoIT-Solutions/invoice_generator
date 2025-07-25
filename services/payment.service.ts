@@ -1,6 +1,7 @@
 import { Invoice } from "../database/models/invoice.model";
-import { sendInvoiceByGmail } from "../lib/utilsServer";
+import { sendInvoiceByGmail } from "../lib/services/gmailSender";
 import Config from "../database/models/config.model";
+import { getInvoiceEmailContent } from "@/lib/email.utils";
 
 export async function lastUnpaidReminderDate() {
   try {
@@ -58,25 +59,21 @@ export async function lastUnpaidReminderDate() {
           daysSinceLastReminder >= remindAfterDays);
 
       if (shouldSend) {
-        await sendInvoiceByGmail(
-          invoice.client_email,
-          `⏰ Payment Reminder: Invoice #${invoice.invoice_number}`,
-          `This is a friendly reminder to complete your payment for Invoice #${invoice.invoice_number}.\n\nThank you.`
-        );
-        
+        const { subject, message } = getInvoiceEmailContent("reminder", {
+          ...invoice,
+          invoice_number: Number(invoice.invoice_number),
+        });
+        await sendInvoiceByGmail(invoice.client_email, subject, message);
+
         // Update last reminder date
         await Invoice.update(
           { lastUnpaidReminderDate: today },
           { where: { id: invoice.id } }
         );
-
-        console.log(
-          `✔ Reminder sent to ${invoice.client_email} for Invoice #${invoice.invoice_number}`
-        );
       }
     }
   } catch (err) {
-    console.error("❌ Error in payment reminder check:", err);
+    console.error(" Error in payment reminder check:", err);
     throw err;
   }
 }

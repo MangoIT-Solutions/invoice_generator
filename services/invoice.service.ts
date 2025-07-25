@@ -158,3 +158,113 @@ export async function getBankDetails() {
     return null;
   }
 }
+
+// Updates an existing invoice based on the provided payload.
+export async function updateInvoiceFromPayload(payload: any) {
+  const {
+    invoice_number,
+    client_name,
+    client_address,
+    client_email,
+    invoice_date,
+    Date_range,
+    term,
+    project_code,
+    payment_charges,
+    items,
+  } = payload;
+
+  if (!invoice_number) throw new Error("Invoice number is required");
+
+  // Step 1: Fetch invoice
+  const invoice = await Invoice.findOne({
+    where: { invoice_number },
+    attributes: ["id", "payment_charges"],
+  });
+
+  if (!invoice) throw new Error("Invoice not found");
+
+  const invoiceId = invoice.id;
+
+  // Step 2: Update invoice fields
+  const updateData: any = {};
+  if (client_name) updateData.client_name = client_name;
+  if (client_address) updateData.client_address = client_address;
+  if (client_email) updateData.client_email = client_email;
+  if (invoice_date) updateData.invoice_date = invoice_date;
+  if (Date_range) updateData.period = Date_range;
+  if (term) updateData.term = term;
+  if (project_code) updateData.project_code = project_code;
+  if (typeof payment_charges !== "undefined")
+    updateData.payment_charges = payment_charges;
+
+  if (Object.keys(updateData).length) {
+    await Invoice.update(updateData, { where: { invoice_number } });
+  }
+
+  // Step 3: Remove items
+  if (items?.remove?.length) {
+    for (const desc of items.remove) {
+      await InvoiceItem.destroy({
+        where: {
+          invoice_id: invoiceId,
+          description: desc,
+        },
+      });
+    }
+  }
+
+  // Step 4: Add or Update items
+  if (items?.add?.length) {
+    for (const item of items.add) {
+      await InvoiceItem.upsert({
+        invoice_id: invoiceId,
+        description: item.description,
+        base_rate: item.base_rate,
+        unit: item.unit,
+        amount: item.amount,
+      });
+    }
+  }
+
+  // Step 5: Replace items (force update)
+  if (items?.replace?.length) {
+    for (const item of items.replace) {
+      await InvoiceItem.update(
+        {
+          base_rate: item.base_rate,
+          unit: item.unit,
+          amount: item.amount,
+        },
+        {
+          where: {
+            invoice_id: invoiceId,
+            description: item.description,
+          },
+        }
+      );
+    }
+  }
+
+  // Step 6: Recalculate totals
+  const updatedItems = await InvoiceItem.findAll({
+    where: { invoice_id: invoiceId },
+    attributes: ["amount"],
+  });
+
+  const subtotal = updatedItems.reduce(
+    (sum, item) => sum + Number(item.amount),
+    0
+  );
+
+  const finalCharges =
+    typeof payment_charges !== "undefined"
+      ? payment_charges
+      : invoice.payment_charges;
+
+  const total = subtotal + Number(finalCharges);
+
+  await Invoice.update({ subtotal, total }, { where: { id: invoiceId } });
+
+  return { status: "success", invoice_id: invoiceId };
+}

@@ -4,15 +4,16 @@ import { InvoiceItem } from "@/database/models/invoice-item.model";
 import { getCompanyConfig } from "@/services/company.service";
 import { getBankDetails } from "@/services/bank.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
-import { sendInvoiceByGmail } from "@/lib/utilsServer";
+import { sendInvoiceByGmail } from "@/lib/services/gmailSender";
 import { getNextInvoiceNumber } from "@/services/invoice.service";
 import path from "path";
 import { Op } from "sequelize";
 import { addMonths, isSameDay } from "date-fns";
+import { getInvoiceEmailContent, getInvoicePdfPaths } from "@/lib/email.utils";
 
 export async function processRecurringInvoices(today: Date = new Date()) {
   const day = today.getDate();
-  
+
   //  Fetch all recurring invoices
   const recurringInvoices = await Invoice.findAll({
     where: {
@@ -24,7 +25,7 @@ export async function processRecurringInvoices(today: Date = new Date()) {
   });
 
   const results = [];
- 
+
   for (const invoice of recurringInvoices) {
     const isOnce = invoice.recurring_interval === "once a month";
     const isTwice = invoice.recurring_interval === "twice a month";
@@ -58,8 +59,8 @@ export async function processRecurringInvoices(today: Date = new Date()) {
       created_at: today,
       recurring_interval: null,
       lastInvoiceSendDate: null,
-      
     });
+    
     // 3. Duplicate Items
     const itemsToCreate = (invoice.items ?? []).map((item) => ({
       invoice_id: newInvoice.id,
@@ -79,9 +80,9 @@ export async function processRecurringInvoices(today: Date = new Date()) {
     //  4. Generate PDF
     const company = await getCompanyConfig();
     const bank = await getBankDetails();
-
-    const pdfFileName = `invoice-${invoiceNumber}.pdf`;
-    const pdfPath = path.join(process.cwd(), "public", "invoices", pdfFileName);
+    const { fileName: pdfFileName, filePath: pdfPath } = getInvoicePdfPaths(
+      Number(invoiceNumber)
+    );
 
     if (!company || !bank) {
       throw new Error("Company or bank details missing.");
@@ -95,8 +96,12 @@ export async function processRecurringInvoices(today: Date = new Date()) {
     );
 
     //  5. Send Email
-    const subject = `📄 Recurring Invoice #${invoiceNumber} - Mango IT Solutions`;
-    const message = `Dear ${invoice.client_name},\n\nPlease find attached your recurring invoice #${invoiceNumber}.\n\nTotal Amount: ₹${invoice.total}\n\nThanks.`;
+    const { subject, message } = getInvoiceEmailContent("recurring", {
+      invoice_number: Number(invoiceNumber),
+      client_name: invoice.client_name,
+      client_email: invoice.client_email,
+      total: invoice.total,
+    });
 
     await sendInvoiceByGmail(invoice.client_email, subject, message, pdfPath);
 
