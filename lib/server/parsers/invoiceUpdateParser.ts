@@ -27,6 +27,8 @@ export async function parseEmailContentForUpdating(
     term: "",
     project_code: "",
     payment_charges: undefined,
+    total: 0,
+    total_amount: 0,
     items: {
       add: [],
       remove: [],
@@ -116,13 +118,16 @@ export async function parseEmailContentForUpdating(
         } else if (action === "replace") {
           payload.items.replace.push(item);
         }
+
+        // Accumulate total
+        payload.total += amount;
       }
     }
   }
-
   if (!payload.invoice_number) {
     throw new Error("Missing Invoice Number for update");
   }
-
+  // Add transfer charges (if any) to total_amount
+  payload.total_amount = payload.total + (payload.payment_charges || 0);
   return payload;
 }

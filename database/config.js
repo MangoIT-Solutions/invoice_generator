@@ -1,6 +1,7 @@
 const fs = require("fs");
 require("dotenv").config();
 
+
 module.exports = {
   development: {
     username: process.env.MYSQL_USER,
@@ -12,6 +13,7 @@ module.exports = {
     dialectOptions: {
       bigNumberStrings: true,
     },
+
   },
   test: {
     username: "root",

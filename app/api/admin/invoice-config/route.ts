@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ Step 3: Reusable upsert function for config table
-    const upsertConfig = async (key: string, value: string) => {
-      const existing = await Config.findOne({ where: { key } });
+    const upsertConfig = async (keyIndex: string, value: string) => {
+      const existing = await Config.findOne({ where: { keyIndex } });
 
       if (existing) {
         await existing.update({ value });
       } else {
-        await Config.create({ key, value });
+        await Config.create({ keyIndex, value });
       }
     };
 

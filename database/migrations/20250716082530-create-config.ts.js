@@ -14,7 +14,7 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: false,
         unique: true,
-        field: "key", 
+        field: "key",
       },
       value: {
         type: Sequelize.TEXT,
@@ -34,7 +34,7 @@ module.exports = {
     });
 
     // Optional: Add unique index if needed
-    // await queryInterface.addIndex('config', ['keyIndex'], { unique: true });
+    await queryInterface.addIndex("config", ["keyIndex"], { unique: true });
   },
 
   async down(queryInterface, Sequelize) {

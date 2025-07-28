@@ -19,6 +19,7 @@ export function generateInvoiceHtml(
   const companyData = company;
   const bankData = bank;
   console.log("formatDateToMDY", formatDateToMDY);
+  console.log("InvoiceData", invoice.invoice_number);
   const logoFileName = companyData.company_logo || "default_logo.png";
   const logoFilePath = path.join(
     process.cwd(),
@@ -44,6 +45,7 @@ export function generateInvoiceHtml(
     const [year, month, day] = invoiceDateStr.split("-").map(Number);
     invoiceDate = new Date(Date.UTC(year, month - 1, day));
   }
+  console.log("invoice_number", invoice.invoice_number);
 
   // ⬇️ Return full HTML using `invoiceData`, `itemData`, `companyData`, and `bankData`
   return `<!DOCTYPE html>

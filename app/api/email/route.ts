@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseEmailsFromGmail } from "@/lib/server/gmail/gmail.service";
-import {
-  sendInvoiceByGmail,
-} from "@/lib/server/gmail/gmail.service";
+import { sendInvoiceByGmail } from "@/lib/server/gmail/gmail.service";
 import { updateInvoiceFromPayload } from "@/services/invoice.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
 import { getCompanyConfig } from "@/services/company.service";
@@ -10,11 +8,9 @@ import { getBankDetails } from "@/services/bank.service";
 import path from "path";
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-import {
-  getInvoiceEmailContent,
-} from "@/lib/server/gmail/gmail.utils";
-import {getInvoicePdfPaths} from "@/lib/invoicePdf"
-import {markEmailAsRead} from "@/lib/server/gmail/gmail.utils"
+import { getInvoiceEmailContent } from "@/lib/server/gmail/gmail.utils";
+import { getInvoicePdfPaths } from "@/lib/invoicePdf";
+import { markEmailAsRead } from "@/lib/server/gmail/gmail.utils";
 import { sendInvoiceToApi } from "@/lib/client/api.utils";
 
 export async function GET() {
@@ -29,12 +25,16 @@ export async function GET() {
       if (invoice.type === "update") {
         //  Update invoice
         const updateResult = await updateInvoiceFromPayload(invoice.payload);
-        invoiceId = updateResult.invoice_id;
-        invoiceNumber = invoice.payload.invoice_number;
 
+        invoiceId = updateResult.invoice_id;
+        invoiceNumber = updateResult.invoice_number;
+        if (!invoiceId || !invoiceNumber) {
+          throw new Error("Invoice ID or number missing after update");
+        }
         // Fetch updated invoice and items using Sequelize (as model instances)
         const updatedInvoice = await Invoice.findByPk(invoiceId, {
           include: [{ model: InvoiceItem, as: "items" }],
+          raw: true,
         });
 
         if (!updatedInvoice) {
@@ -47,7 +47,7 @@ export async function GET() {
 
         // Generate PDF
         await generateInvoicePdf(
-          updatedInvoice as any, 
+          updatedInvoice as any,
           company,
           bank,
           `invoice-${invoiceNumber}.pdf`
@@ -67,7 +67,6 @@ export async function GET() {
       const { filePath: pdfPath } = await getInvoicePdfPaths(
         Number(invoiceNumber)
       );
-
       const { subject, message: textBody } = getInvoiceEmailContent("normal", {
         invoice_number: Number(invoiceNumber),
         client_name: invoice.payload.client_name,

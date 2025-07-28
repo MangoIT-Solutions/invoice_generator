@@ -23,7 +23,7 @@ export async function createInvoice(
       ...item,
       invoice_id: invoiceId,
     }));
-
+    console.log("Creating invoice items:", itemsWithInvoiceId);
     await InvoiceItem.bulkCreate(itemsWithInvoiceId, { transaction });
 
     await transaction.commit();
@@ -265,5 +265,5 @@ export async function updateInvoiceFromPayload(payload: any) {
 
   await Invoice.update({ subtotal, total }, { where: { id: invoiceId } });
 
-  return { status: "success", invoice_id: invoiceId };
+  return { status: "success", invoice_id: invoiceId, invoice_number };
 }
