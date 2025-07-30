@@ -1,14 +1,33 @@
 import { getAutomateUser, getRefreshToken } from "@/services/google.service";
 import { google } from "googleapis";
 import { simpleParser } from "mailparser";
-import { parseEmailContentForUpdating } from "@/lib/server/parsers/invoiceUpdateParser";
-import { parseEmailContentForCreating } from "@/lib/server/parsers/invoiceCreateParser";
-import { parseBankMailEmail } from "@/lib/server/parsers/bankMailParser";
-import { markEmailAsRead } from "@/lib/server/gmail/gmail.utils";
+import { parseEmailContentForUpdating } from "@/lib/server/parsers";
+import { parseEmailContentForCreating } from "@/lib/server/parsers";
+import { parseBankMailEmail } from "@/lib/server/parsers";
+import { markEmailAsRead } from "@/lib/server/email";
 import { createMimeMessage } from "mimetext";
-import { getGmailClient } from "@/lib/server/gmail/gmail.auth";
+import { gmail_v1 } from "googleapis";
 import path from "path";
 import fs from "fs/promises";
+
+
+export async function getGmailClient() {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken) throw new Error("No refresh token in DB");
+
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+    process.env.GOOGLE_REDIRECT_URI!
+  );
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+  const accessToken = await oauth2Client.getAccessToken();
+  if (!accessToken) throw new Error("Failed to get access token");
+
+  return { gmail, accessToken, oauth2Client };
+}
 
 // Reads unread Gmail emails with a specific label and subject.
 export async function parseEmailsFromGmail() {

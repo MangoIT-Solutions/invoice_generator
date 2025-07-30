@@ -13,7 +13,6 @@ export async function extractSenderAndBody(rawBase64: string): Promise<{
   return { senderEmail, bodyText };
 }
 
-
 export async function markEmailAsRead(
   gmail: gmail_v1.Gmail,
   messageId: string

@@ -9,8 +9,8 @@ import { getNextInvoiceNumber } from "@/services/invoice.service";
 import path from "path";
 import { Op } from "sequelize";
 import { addMonths, isSameDay } from "date-fns";
-import { getInvoiceEmailContent, } from "@/lib/server/gmail/gmail.utils";
-import {getInvoicePdfPaths } from "@/lib/invoicePdf"
+import { getInvoiceEmailContent } from "@/lib/server/email";
+import { getInvoicePdfPaths } from "@/lib/invoicePdf";
 
 export async function processRecurringInvoices(today: Date = new Date()) {
   const day = today.getDate();
@@ -61,7 +61,7 @@ export async function processRecurringInvoices(today: Date = new Date()) {
       recurring_interval: null,
       lastInvoiceSendDate: null,
     });
-    
+
     // 3. Duplicate Items
     const itemsToCreate = (invoice.items ?? []).map((item) => ({
       invoice_id: newInvoice.id,

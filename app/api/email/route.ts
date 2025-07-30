@@ -5,12 +5,11 @@ import { updateInvoiceFromPayload } from "@/services/invoice.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
 import { getCompanyConfig } from "@/services/company.service";
 import { getBankDetails } from "@/services/bank.service";
-import path from "path";
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-import { getInvoiceEmailContent } from "@/lib/server/gmail/gmail.utils";
+import { getInvoiceEmailContent } from "@/lib/server/email";
 import { getInvoicePdfPaths } from "@/lib/invoicePdf";
-import { markEmailAsRead } from "@/lib/server/gmail/gmail.utils";
+import { markEmailAsRead } from "@/lib/server/email";
 import { sendInvoiceToApi } from "@/lib/client/api.utils";
 
 export async function GET() {
