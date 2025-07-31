@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "cron": "ts-node lib/cron/Job.ts"
+    "cron": "node --loader ts-node/esm lib/cron/Job.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

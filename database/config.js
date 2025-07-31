@@ -1,8 +1,8 @@
-const fs = require("fs");
-require("dotenv").config();
 
+import dotenv from "dotenv";
+dotenv.config();
 
-module.exports = {
+export default {
   development: {
     username: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
