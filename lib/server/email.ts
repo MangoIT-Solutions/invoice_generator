@@ -1,7 +1,6 @@
 import { simpleParser } from "mailparser";
 import { gmail_v1 } from "googleapis";
 
-
 export async function extractSenderAndBody(rawBase64: string): Promise<{
   senderEmail: string;
   bodyText: string;
@@ -43,21 +42,20 @@ export function getInvoiceEmailContent(
 
   if (type === "reminder") {
     return {
-      subject: `⏰ Payment Reminder: Invoice #${invoiceNumber}`,
+      subject: `Payment Reminder: Invoice #${invoiceNumber}`,
       message: `This is a friendly reminder to complete your payment for Invoice #${invoiceNumber}.\n\nThank you.`,
     };
   }
 
   if (type === "recurring") {
     return {
-      subject: `📄 Recurring Invoice #${invoiceNumber} - Mango IT Solutions`,
+      subject: ` Recurring Invoice #${invoiceNumber} - Mango IT Solutions`,
       message: `Dear ${invoice.client_name},\n\nPlease find attached your recurring invoice #${invoiceNumber}.\n\nTotal Amount: ₹${total}\n\nThanks.`,
     };
   }
 
-  // Default: normal invoice
   return {
-    subject: `📄 Your Invoice #${invoiceNumber} from Mango IT Solutions`,
+    subject: `Your Invoice #${invoiceNumber} from Mango IT Solutions`,
     message: `Invoice #${invoiceNumber} attached.\nTotal: ₹${total}`,
   };
 }
