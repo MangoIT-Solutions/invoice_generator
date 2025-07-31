@@ -5,7 +5,6 @@ export async function sendInvoiceToApi(invoicePayload: any) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(invoicePayload),
   });
-  console.log("Sending invoice to API:", invoicePayload);
   const data = await res.json();
   return { status: res.status, data };
 }

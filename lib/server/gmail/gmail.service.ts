@@ -6,10 +6,8 @@ import { parseEmailContentForCreating } from "@/lib/server/parsers";
 import { parseBankMailEmail } from "@/lib/server/parsers";
 import { markEmailAsRead } from "@/lib/server/email";
 import { createMimeMessage } from "mimetext";
-import { gmail_v1 } from "googleapis";
 import path from "path";
 import fs from "fs/promises";
-
 
 export async function getGmailClient() {
   const refreshToken = await getRefreshToken();

@@ -94,7 +94,7 @@ export async function getUserInvoices(userId?: number) {
         {
           model: User,
           attributes: ["id", "username"],
-          as: "user", // this must match your Invoice.belongsTo(User, { as: 'user' })
+          as: "user",
         },
       ],
       order: [["created_at", "DESC"]],
@@ -115,7 +115,7 @@ export async function getInvoiceWithItems(invoiceId: number) {
       include: [
         {
           model: InvoiceItem,
-          as: "items", // 👈 This must match the alias in hasMany()
+          as: "items",
         },
       ],
     });
@@ -124,7 +124,7 @@ export async function getInvoiceWithItems(invoiceId: number) {
 
     return {
       invoice: invoice.get({ plain: true }),
-      items: (invoice as any).items, // Or use `.getDataValue('items')` if needed
+      items: (invoice as any).items,
     };
   } catch (error) {
     console.error("Error fetching invoice with items:", error);
@@ -213,12 +213,39 @@ export async function updateInvoiceFromPayload(payload: any) {
     }
   }
 
-  // Step 4: Add or Update items
+  // Step 4: Add items
+  // if (items?.add?.length) {
+  //   for (const item of items.add) {
+  //     await InvoiceItem.upsert(
+  //       {
+  //         invoice_id: invoiceId,
+  //         description: item.description,
+  //         base_rate: item.base_rate,
+  //         unit: item.unit,
+  //         amount: item.amount,
+  //       }
+  //     );
+  //   }
+  // }
   if (items?.add?.length) {
     for (const item of items.add) {
-      await InvoiceItem.upsert({
+      const desc = item.description.trim();
+
+      const existingItem = await InvoiceItem.findOne({
+        where: {
+          invoice_id: invoiceId,
+          description: desc,
+        },
+      });
+
+      if (existingItem) {
+        console.log("Duplicate found:", existingItem.toJSON());
+        continue;
+      }
+
+      const created = await InvoiceItem.create({
         invoice_id: invoiceId,
-        description: item.description,
+        description: desc,
         base_rate: item.base_rate,
         unit: item.unit,
         amount: item.amount,
@@ -226,7 +253,7 @@ export async function updateInvoiceFromPayload(payload: any) {
     }
   }
 
-  // Step 5: Replace items (force update)
+  // Step 5: Replace items (update)
   if (items?.replace?.length) {
     for (const item of items.replace) {
       await InvoiceItem.update(
@@ -265,5 +292,26 @@ export async function updateInvoiceFromPayload(payload: any) {
 
   await Invoice.update({ subtotal, total }, { where: { id: invoiceId } });
 
-  return { status: "success", invoice_id: invoiceId, invoice_number };
+  const fullInvoice = await Invoice.findOne({
+    where: { id: invoiceId },
+    include: [
+      {
+        model: InvoiceItem,
+        as: "items",
+        attributes: ["description", "base_rate", "unit", "amount"],
+      },
+    ],
+  });
+  if (!fullInvoice) {
+    throw new Error("Updated invoice not found");
+  }
+  // console.log("Updated invoice:", fullInvoice.toJSON());
+
+  return {
+    status: "success",
+    invoice_id: invoiceId,
+    invoice_number,
+    invoice: fullInvoice,
+    message: "Invoice updated successfully",
+  };
 }

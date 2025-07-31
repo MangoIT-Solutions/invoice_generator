@@ -33,7 +33,6 @@ export async function GET() {
         // Fetch updated invoice and items using Sequelize (as model instances)
         const updatedInvoice = await Invoice.findByPk(invoiceId, {
           include: [{ model: InvoiceItem, as: "items" }],
-          raw: true,
         });
 
         if (!updatedInvoice) {

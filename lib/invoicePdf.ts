@@ -34,11 +34,19 @@ export async function generateInvoicePdf(
   // Ensure invoices directory exists
   mkdirSync(pdfDir, { recursive: true });
 
+  function toPlainObject(obj: any) {
+    if (obj && typeof obj.get === "function") {
+      return obj.get({ plain: true });
+    }
+    return obj;
+  }
+
   // const items = invoiceData.items.map((item) => item.get({ plain: true }));
+  const plainInvoice = toPlainObject(invoiceData);
 
   const htmlContent = generateInvoiceHtml(
     {
-      ...invoiceData,
+      ...plainInvoice,
       client_company_name:
         invoiceData.client_company_name || invoiceData.client_name,
       client_address: invoiceData.client_address || "",
