@@ -4,7 +4,8 @@ import { InvoiceItem } from "@/database/models/invoice-item.model";
 import { getCompanyConfig } from "@/services/company.service";
 import { getBankDetails } from "@/services/bank.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
-import { sendInvoiceByGmail } from "@/lib/server/gmail/gmail.service";
+import { sendInvoiceEmail
+ } from "@/lib/server/gmail/gmail.service";
 import { getNextInvoiceNumber } from "@/services/invoice.service";
 import path from "path";
 import { Op } from "sequelize";
@@ -104,7 +105,8 @@ export async function processRecurringInvoices(today: Date = new Date()) {
       total: invoice.total,
     });
 
-    await sendInvoiceByGmail(invoice.client_email, subject, message, pdfPath);
+    await sendInvoiceEmail
+(invoice.client_email, subject, message, pdfPath);
 
     // 6. Update original invoice's `lastInvoiceSendDate`
     invoice.lastInvoiceSendDate = today;

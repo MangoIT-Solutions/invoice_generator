@@ -28,7 +28,7 @@ export async function getGmailClient() {
 }
 
 // Reads unread Gmail emails with a specific label and subject.
-export async function parseEmailsFromGmail() {
+export async function readInvoiceEmails() {
   const { gmail, accessToken } = await getGmailClient();
 
   const label = process.env.GMAIL_QUERY_LABEL || "invoices";
@@ -109,7 +109,7 @@ export async function parseEmailsFromGmail() {
 }
 
 // Reads unread gmail for bank mails
-export async function parseBankMailsFromGmail() {
+export async function readBankEmails() {
   const { gmail } = await getGmailClient();
 
   const label = process.env.BANK_QUERY_LABEL || "bankMail";
@@ -158,7 +158,7 @@ export async function parseBankMailsFromGmail() {
 }
 
 // Sends a PDF invoice as email to client using Gmail API and remind for unpaid invoices.:
-export async function sendInvoiceByGmail(
+export async function sendInvoiceEmail(
   to: string,
   subject: string,
   text: string,

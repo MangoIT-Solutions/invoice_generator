@@ -3,7 +3,7 @@ import { BankDetails } from "@/database/models/bank-details.model";
 import { Invoice } from "@/database/models/invoice.model";
 import InvoicePayment from "@/database/models/invoice_payment.model";
 import Config from "@/database/models/config.model";
-import { parseBankMailsFromGmail } from "@/lib/server/gmail/gmail.service";
+import { readBankEmails } from "@/lib/server/gmail/gmail.service";
 
 export async function getBankDetails() {
   try {
@@ -55,7 +55,7 @@ export async function updateBankDetails(data: any) {
 
 export async function processBankMail() {
   try {
-    const parsedBankMails = await parseBankMailsFromGmail();
+    const parsedBankMails = await readBankEmails();
     const results = [];
 
     const marginConfig = await Config.findOne({

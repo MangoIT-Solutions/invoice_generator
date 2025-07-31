@@ -62,7 +62,6 @@ export async function GET(req: NextRequest) {
     }
     // Save refresh token and email
     await saveRefreshToken(refreshToken, email);
-
     return NextResponse.redirect(new URL("/google-authentication", req.url));
   } catch (error) {
     console.error("OAuth Callback Error:", error);

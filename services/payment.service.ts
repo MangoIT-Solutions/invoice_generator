@@ -1,5 +1,6 @@
 import { Invoice } from "../database/models/invoice.model";
-import { sendInvoiceByGmail } from "@/lib/server/gmail/gmail.service";
+import { sendInvoiceEmail
+ } from "@/lib/server/gmail/gmail.service";
 import Config from "../database/models/config.model";
 import { getInvoiceEmailContent } from "@/lib/server/email";
 
@@ -63,7 +64,8 @@ export async function lastUnpaidReminderDate() {
           ...invoice,
           invoice_number: Number(invoice.invoice_number),
         });
-        await sendInvoiceByGmail(invoice.client_email, subject, message);
+        await sendInvoiceEmail
+(invoice.client_email, subject, message);
 
         // Update last reminder date
         await Invoice.update(
