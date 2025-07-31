@@ -214,19 +214,6 @@ export async function updateInvoiceFromPayload(payload: any) {
   }
 
   // Step 4: Add items
-  // if (items?.add?.length) {
-  //   for (const item of items.add) {
-  //     await InvoiceItem.upsert(
-  //       {
-  //         invoice_id: invoiceId,
-  //         description: item.description,
-  //         base_rate: item.base_rate,
-  //         unit: item.unit,
-  //         amount: item.amount,
-  //       }
-  //     );
-  //   }
-  // }
   if (items?.add?.length) {
     for (const item of items.add) {
       const desc = item.description.trim();
@@ -305,7 +292,6 @@ export async function updateInvoiceFromPayload(payload: any) {
   if (!fullInvoice) {
     throw new Error("Updated invoice not found");
   }
-  // console.log("Updated invoice:", fullInvoice.toJSON());
 
   return {
     status: "success",
