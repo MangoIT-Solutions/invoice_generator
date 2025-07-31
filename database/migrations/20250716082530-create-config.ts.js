@@ -34,7 +34,7 @@ module.exports = {
     });
 
     // Optional: Add unique index if needed
-    await queryInterface.addIndex("config", ["keyIndex"], { unique: true });
+    await queryInterface.addIndex("config", ["key"], { unique: true });
   },
 
   async down(queryInterface, Sequelize) {
