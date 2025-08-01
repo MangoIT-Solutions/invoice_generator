@@ -1,10 +1,9 @@
-
 import fs from "fs";
 import path from "path";
 import Sequelize from "sequelize";
+import configAll from "../config.js";
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || "development";
-import configAll from "../config.js";
 const config = configAll[env];
 const db = {};
 
@@ -20,33 +19,31 @@ if (config.use_env_variable) {
   );
 }
 
-// ✅ Dynamically read and import all model files in current folder
-fs.readdirSync(__dirname)
-  .filter((file) => {
-    return (
+export const initModels = async () => {
+  const modelFiles = fs.readdirSync(__dirname)
+    .filter((file) => (
       file.indexOf(".") !== 0 &&
       file !== basename &&
       file.slice(-3) === ".js" &&
       file.indexOf(".test.js") === -1
-    );
-  })
-  .forEach(async (file) => {
+    ));
+
+  await Promise.all(modelFiles.map(async (file) => {
     const modelModule = await import(path.join(__dirname, file));
-    const model = modelModule.default(
-      sequelize,
-      Sequelize.DataTypes
-    );
-    db[model.name] = model;
+    const modelClass = modelModule.default;
+    if (modelClass && modelClass.prototype instanceof Sequelize.Model) {
+      db[modelClass.name] = modelClass;
+    }
+  }));
+
+  Object.keys(db).forEach((modelName) => {
+    if (db[modelName].associate) {
+      db[modelName].associate(db);
+    }
   });
 
-// ✅ Apply associations if defined
-Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
-});
+  db.sequelize = sequelize;
+  db.Sequelize = Sequelize;
+};
 
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
-
-export default db;
+export { db };
