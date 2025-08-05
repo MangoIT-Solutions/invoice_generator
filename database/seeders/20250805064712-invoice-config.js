@@ -39,7 +39,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete("configs", {
+    await queryInterface.bulkDelete("config", {
       keyIndex: [
         "starting_number",
         "current_number",
