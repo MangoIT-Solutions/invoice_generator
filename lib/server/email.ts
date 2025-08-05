@@ -1,5 +1,6 @@
 import { simpleParser } from "mailparser";
 import { gmail_v1 } from "googleapis";
+import Config from "@/database/models/config.model";
 
 export async function extractSenderAndBody(rawBase64: string): Promise<{
   senderEmail: string;
@@ -58,4 +59,12 @@ export function getInvoiceEmailContent(
     subject: `Your Invoice #${invoiceNumber} from Mango IT Solutions`,
     message: `Invoice #${invoiceNumber} attached.\nTotal: ₹${total}`,
   };
+}
+
+export async function getAllowedInvoiceEmails(): Promise<string[]> {
+  const config = await Config.findOne({
+    where: { key: "invoiceRequestEmailAllowed" },
+  });
+  if (!config || !config.value) return [];
+  return config.value.split(",").map((email: string) => email.trim());
 }
