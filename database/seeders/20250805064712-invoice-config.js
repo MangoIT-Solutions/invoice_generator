@@ -6,31 +6,31 @@ module.exports = {
 
     await queryInterface.bulkInsert("config", [
       {
-        keyIndex: "starting_number",
+        key: "starting_number",
         value: "1000",
         createdAt: now,
         updatedAt: now,
       },
       {
-        keyIndex: "current_number",
+        key: "current_number",
         value: "1000",
         createdAt: now,
         updatedAt: now,
       },
       {
-        keyIndex: "invoiceRequestEmailAllowed",
+        key: "invoiceRequestEmailAllowed",
         value: "abc@example.com,xyz@gmail.com",
         createdAt: now,
         updatedAt: now,
       },
       {
-        keyIndex: "upaidInvoiceReminderDays",
+        key: "upaidInvoiceReminderDays",
         value: "15",
         createdAt: now,
         updatedAt: now,
       },
       {
-        keyIndex: "marginAmountForUnduePayment",
+        key: "marginAmountForUnduePayment",
         value: "5.00",
         createdAt: now,
         updatedAt: now,
@@ -40,7 +40,7 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.bulkDelete("config", {
-      keyIndex: [
+      key: [
         "starting_number",
         "current_number",
         "invoiceRequestEmailAllowed",
