@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     const now = new Date();
 
-    await queryInterface.bulkInsert("configs", [
+    await queryInterface.bulkInsert("config", [
       {
         keyIndex: "starting_number",
         value: "1000",
