@@ -40,3 +40,4 @@ export async function getAutomateUser(): Promise<number> {
 
   return newUser.getDataValue("id");
 }
+  

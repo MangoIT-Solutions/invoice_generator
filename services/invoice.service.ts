@@ -196,6 +196,8 @@ export async function updateInvoiceFromPayload(payload: any) {
   if (project_code) updateData.project_code = project_code;
   if (typeof payment_charges !== "undefined")
     updateData.payment_charges = payment_charges;
+  if (payload.recurring_interval)
+    updateData.recurring_interval = payload.recurring_interval;
 
   if (Object.keys(updateData).length) {
     await Invoice.update(updateData, { where: { invoice_number } });

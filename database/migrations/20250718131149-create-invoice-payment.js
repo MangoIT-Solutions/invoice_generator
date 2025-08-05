@@ -13,7 +13,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "invoices", // ✅ your existing invoice table
+          model: "invoices",
           key: "id",
         },
         onDelete: "CASCADE",

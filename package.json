@@ -2,13 +2,12 @@
   "name": "nextjs",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "cron": "node --loader ts-node/esm lib/cron/Job.ts"
+    "cron": "ts-node-esm lib/cron/Job.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

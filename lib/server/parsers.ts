@@ -1,5 +1,22 @@
 import { extractSenderAndBody } from "../server/email";
 
+// Parses key-value lines from the email body into an object
+export function parseKeyValueLines(lines: string[]): Record<string, string> {
+  const result: Record<string, string> = {};
+
+  for (const line of lines) {
+    const [rawKey, ...rest] = line.split(":");
+    if (!rawKey || rest.length === 0) continue;
+
+    const key = rawKey.trim().toLowerCase().replace(/\s+/g, "_");
+    const value = rest.join(":").trim();
+
+    if (key && value) result[key] = value;
+  }
+
+  return result;
+}
+
 // Parses the email to extract invoice creation payload:
 export async function parseEmailContentForCreating(
   rawBase64Data: string,
@@ -7,103 +24,74 @@ export async function parseEmailContentForCreating(
 ) {
   const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
 
-  if (!bodyText || !senderEmail) {
-    throw new Error("No body text or Email found in email");
-  }
+  if (!bodyText || !senderEmail)
+    throw new Error("No email body or sender email");
 
   const lines = bodyText
+    .replace(/\[image:.*?\]/gi, "")
     .split("\n")
-    .map((line) => line.trim())
+    .map((l) => l.trim())
     .filter(Boolean);
+  const keyMap = parseKeyValueLines(lines);
 
   const payload: any = {
     user_id: userId,
-    client_name: "",
-    client_address: "",
-    client_email: "",
-    invoice_date: new Date().toISOString().split("T")[0],
-    Date_range: "",
-    term: "",
-    project_code: "",
-    payment_charges: 0,
+    senderEmail,
+    client_name: keyMap.client_name || "",
+    client_email: keyMap.client_email || "",
+    client_address: keyMap.client_address || "",
+    project_code: keyMap.project_code || "",
+    invoice_date: keyMap.invoice_date || new Date().toISOString().split("T")[0],
+    Date_range: keyMap.date_range || "",
+    term: keyMap.term || "",
+    recurring_interval: (() => {
+      const recurringRaw = keyMap.recurring_term?.toLowerCase();
+      const valid = ["once a month", "twice a month"];
+      return valid.includes(recurringRaw) ? recurringRaw : null;
+    })(),
+    payment_charges:
+      keyMap.include_transfer_charges?.toLowerCase() === "yes" ? 35 : 0,
     items: [],
-    senderEmail: senderEmail,
+    subtotal: 0,
+    total: 0,
+    status: "draft",
   };
 
-  const getValue = (str: string, fieldName: string = "Unknown"): string => {
-    const parts = str.split(":");
-    if (parts.length < 2) {
-      throw new Error(`Missing ':' separator for ${fieldName}`);
-    }
-    const value = parts.slice(1).join(":").trim();
-    if (!value) {
-      throw new Error(`Empty value for required field: ${fieldName}`);
-    }
-    return value;
-  };
+  const itemStart = lines.findIndex((l) =>
+    l.toLowerCase().startsWith("items:")
+  );
+  if (itemStart >= 0) {
+    for (let i = itemStart + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.toLowerCase().startsWith("-")) continue;
 
-  let isItemSection = false;
-
-  for (const line of lines) {
-    const lower = line.toLowerCase();
-
-    if (lower.startsWith("client name:")) {
-      payload.client_name = getValue(line, "Client Name");
-    } else if (lower.startsWith("client address:")) {
-      payload.client_address = getValue(line, "Client Address");
-    } else if (lower.startsWith("client email:")) {
-      payload.client_email = getValue(line, "Client Email");
-    } else if (lower.startsWith("invoice date:")) {
-      payload.invoice_date = getValue(line, "Invoice Date");
-    } else if (lower.startsWith("project code:")) {
-      payload.project_code = getValue(line, "Project Code");
-    } else if (lower.startsWith("term:")) {
-      payload.term = getValue(line, "Term");
-    } else if (lower.startsWith("date range:")) {
-      payload.Date_range = getValue(line, "Date Range");
-    } else if (lower.startsWith("include transfer charges:")) {
-      const val = getValue(line, "Include Transfer Charges").toLowerCase();
-      if (val === "yes") payload.payment_charges = 35;
-    } else if (lower.startsWith("items:")) {
-      isItemSection = true;
-    } else if (isItemSection && lower.startsWith("- description:")) {
-      const descMatch = line.match(/description:\s*(.*?),/i);
+      const descMatch = line.match(/description:\s*([^,]+)/i);
       const rateMatch = line.match(/base rate:\s*([\d.]+)/i);
       const unitMatch = line.match(/unit:\s*([\d.]+)/i);
       const amountMatch = line.match(/amount:\s*([\d.]+)/i);
 
-      if (descMatch && rateMatch && unitMatch && amountMatch) {
-        const description = descMatch[1].trim();
-        const base_rate = parseFloat(rateMatch[1]);
-        const unit = parseFloat(unitMatch[1]);
-        const amount = parseFloat(amountMatch[1]);
+      if (!descMatch || !rateMatch || !unitMatch) continue;
 
-        if (
-          description &&
-          !isNaN(base_rate) &&
-          !isNaN(unit) &&
-          !isNaN(amount)
-        ) {
-          payload.items.push({ description, base_rate, unit, amount });
-        } else {
-          throw new Error(`Invalid item values in line: ${line}`);
-        }
-      } else {
-        throw new Error(`Invalid item format in line: ${line}`);
+      const description = descMatch[1].trim();
+      const base_rate = parseFloat(rateMatch[1]);
+      const unit = parseFloat(unitMatch[1]);
+      const amount = amountMatch?.[1]
+        ? parseFloat(amountMatch[1])
+        : base_rate * unit;
+
+      if (!isNaN(base_rate) && !isNaN(unit) && !isNaN(amount)) {
+        payload.items.push({ description, base_rate, unit, amount });
       }
     }
   }
 
-  if (!payload.items.length) {
-    throw new Error("Invoice must contain at least one valid item");
-  }
+  if (payload.items.length === 0) throw new Error("No valid items found");
 
   payload.subtotal = payload.items.reduce(
-    (sum: number, item: any) => sum + item.amount,
+    (sum: number, i: any) => sum + i.amount,
     0
   );
-  payload.total = payload.subtotal + (payload.payment_charges || 0);
-  payload.status = "draft";
+  payload.total = payload.subtotal + payload.payment_charges;
 
   return payload;
 }
@@ -114,27 +102,38 @@ export async function parseEmailContentForUpdating(
   userId: number
 ) {
   const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
-
-  if (!bodyText || !senderEmail) {
-    throw new Error("No body text or Email found in email");
-  }
+  if (!bodyText || !senderEmail)
+    throw new Error("No body or sender email found");
 
   const lines = bodyText
+    .replace(/\[image:.*?\]/gi, "")
     .split("\n")
-    .map((line) => line.trim())
+    .map((l) => l.trim())
     .filter(Boolean);
+  const keyMap = parseKeyValueLines(lines);
 
   const payload: any = {
-    invoice_number: "",
+    invoice_number: keyMap.invoice_number || "",
     user_id: userId,
-    client_name: "",
-    client_address: "",
-    client_email: "",
-    invoice_date: new Date().toISOString().split("T")[0],
-    Date_range: "",
-    term: "",
-    project_code: "",
-    payment_charges: undefined,
+    client_name: keyMap.client_name || "",
+    client_address: keyMap.client_address || "",
+    client_email: keyMap.client_email || "",
+    project_code: keyMap.project_code || "",
+    term: keyMap.term || "",
+    recurring_interval: (() => {
+      const recurringRaw = keyMap.recurring_term?.toLowerCase();
+      const validIntervals = ["once a month", "twice a month"];
+      return validIntervals.includes(recurringRaw) ? recurringRaw : null;
+    })(),
+    Date_range: keyMap.date_range || "",
+    payment_charges:
+      keyMap.include_transfer_charges?.toLowerCase() === "yes" ? 35 : 0,
+    invoice_date: (() => {
+      const rawDate = keyMap.invoice_date;
+      if (!rawDate) return new Date().toISOString().split("T")[0];
+      const [day, month, year] = rawDate.split("/");
+      return `${year}-${month}-${day}`;
+    })(),
     total: 0,
     total_amount: 0,
     items: {
@@ -145,46 +144,14 @@ export async function parseEmailContentForUpdating(
     senderEmail,
   };
 
-  const getValue = (str: string, fieldName = "Unknown") => {
-    const parts = str.split(":");
-    if (parts.length < 2) throw new Error(`Missing ':' for ${fieldName}`);
-    const value = parts.slice(1).join(":").trim();
-    if (!value) throw new Error(`Empty value for ${fieldName}`);
-    return value;
-  };
+  const itemStart = lines.findIndex((l) =>
+    l.toLowerCase().startsWith("items:")
+  );
+  if (itemStart >= 0) {
+    for (let i = itemStart + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.toLowerCase().startsWith("-")) continue;
 
-  let isItemSection = false;
-
-  for (const line of lines) {
-    const lower = line.toLowerCase();
-
-    if (lower.startsWith("invoice number:")) {
-      payload.invoice_number = getValue(line, "Invoice Number");
-    } else if (lower.startsWith("client name:")) {
-      payload.client_name = getValue(line, "Client Name");
-    } else if (lower.startsWith("client address:")) {
-      payload.client_address = getValue(line, "Client Address");
-    } else if (lower.startsWith("client email:")) {
-      payload.client_email = getValue(line, "Client Email");
-    } else if (lower.startsWith("invoice date:")) {
-      const rawDate = getValue(line, "Invoice Date");
-      const [day, month, year] = rawDate.split("/");
-      if (!day || !month || !year) {
-        throw new Error(`Invalid Invoice Date format: ${rawDate}`);
-      }
-      payload.invoice_date = `${year}-${month}-${day}`;
-    } else if (lower.startsWith("project code:")) {
-      payload.project_code = getValue(line, "Project Code");
-    } else if (lower.startsWith("term:")) {
-      payload.term = getValue(line, "Term");
-    } else if (lower.startsWith("date range:")) {
-      payload.Date_range = getValue(line, "Date Range");
-    } else if (lower.startsWith("include transfer charges:")) {
-      const val = getValue(line, "Include Transfer Charges").toLowerCase();
-      payload.payment_charges = val === "yes" ? 35 : 0;
-    } else if (lower.startsWith("items:")) {
-      isItemSection = true;
-    } else if (isItemSection && lower.startsWith("- action:")) {
       const actionMatch = line.match(/action:\s*(add|remove|replace)/i);
       const descMatch = line.match(/description:\s*([^,]+)/i);
       const rateMatch = line.match(/base rate:\s*([\d.]+)/i);
@@ -194,49 +161,30 @@ export async function parseEmailContentForUpdating(
       const action = actionMatch?.[1]?.toLowerCase();
       const description = descMatch?.[1]?.trim();
 
-      if (!action || !description) {
-        throw new Error(`Invalid item action or description in line: ${line}`);
-      }
+      if (!action || !description) continue;
 
       if (action === "remove") {
         payload.items.remove.push(description);
       } else {
-        if (
-          !rateMatch ||
-          !unitMatch ||
-          isNaN(parseFloat(rateMatch[1])) ||
-          isNaN(parseFloat(unitMatch[1]))
-        ) {
-          throw new Error(`Missing base rate or unit in line: ${line}`);
+        const base_rate = parseFloat(rateMatch?.[1] || "");
+        const unit = parseFloat(unitMatch?.[1] || "");
+        const amount = amountMatch?.[1]
+          ? parseFloat(amountMatch[1])
+          : base_rate * unit;
+
+        if (!isNaN(base_rate) && !isNaN(unit) && !isNaN(amount)) {
+          const item = { description, base_rate, unit, amount };
+          payload.items[action].push(item);
+          payload.total += amount;
         }
-
-        const base_rate = parseFloat(rateMatch[1]);
-        const unit = parseFloat(unitMatch[1]);
-
-        // Calculate amount if not provided
-        let amount = base_rate * unit;
-        if (amountMatch && !isNaN(parseFloat(amountMatch[1]))) {
-          amount = parseFloat(amountMatch[1]);
-        }
-
-        const item = { description, base_rate, unit, amount };
-
-        if (action === "add") {
-          payload.items.add.push(item);
-        } else if (action === "replace") {
-          payload.items.replace.push(item);
-        }
-
-        // Accumulate total
-        payload.total += amount;
       }
     }
   }
-  if (!payload.invoice_number) {
-    throw new Error("Missing Invoice Number for update");
-  }
-  // Add transfer charges (if any) to total_amount
-  payload.total_amount = payload.total + (payload.payment_charges || 0);
+
+  if (!payload.invoice_number) throw new Error("Missing Invoice Number");
+
+  payload.total_amount = payload.total + payload.payment_charges;
+
   return payload;
 }
 

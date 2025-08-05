@@ -4,7 +4,7 @@ import { simpleParser } from "mailparser";
 import { parseEmailContentForUpdating } from "@/lib/server/parsers";
 import { parseEmailContentForCreating } from "@/lib/server/parsers";
 import { parseBankMailEmail } from "@/lib/server/parsers";
-import { markEmailAsRead } from "@/lib/server/email";
+import { markEmailAsRead, getAllowedInvoiceEmails } from "@/lib/server/email";
 import { createMimeMessage } from "mimetext";
 import path from "path";
 import fs from "fs/promises";
@@ -56,7 +56,7 @@ export async function readInvoiceEmails() {
   const messages = response.data.messages || [];
   const parsedInvoices = [];
   const userId = await getAutomateUser();
-
+  const allowedEmails = await getAllowedInvoiceEmails();
   for (const message of messages) {
     if (!message.id) continue;
 
@@ -70,7 +70,14 @@ export async function readInvoiceEmails() {
       const parsedEmail = await simpleParser(
         Buffer.from(rawMsg.data.raw!, "base64")
       );
-      console.log("Parsed subject:", parsedEmail.subject);
+      const senderEmail = parsedEmail.from?.value?.[0]?.address || "";
+
+      if (!allowedEmails.includes(senderEmail)) {
+        console.warn(
+          ` Unauthorized sender ${senderEmail} — Skipping message ${message.id}`
+        );
+        continue;
+      }
       if (!parsedEmail.subject) {
         console.warn(`No subject found in message ${message.id}`);
         continue;
