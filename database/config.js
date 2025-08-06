@@ -9,7 +9,7 @@ export default {
     database: process.env.MYSQL_DATABASE,
     host: process.env.MYSQL_HOST,
     port: process.env.MYSQL_PORT || 3306,
-    dialect: process.env.MYSQL_DIALECT,
+    dialect: process.env.MYSQL_DIALECT || 'mysql',
     dialectOptions: {
       bigNumberStrings: true,
     },

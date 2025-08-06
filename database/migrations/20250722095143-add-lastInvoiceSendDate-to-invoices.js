@@ -1,7 +1,7 @@
 "use strict";
 
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default{
   up: async (queryInterface, Sequelize) => {
     await queryInterface.addColumn("invoices", "lastInvoiceSendDate", {
       type: Sequelize.DATE,

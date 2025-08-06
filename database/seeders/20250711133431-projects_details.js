@@ -1,6 +1,5 @@
 'use strict';
-
-module.exports = {
+export default {
   async up(queryInterface) {
     const now = new Date();
     await queryInterface.bulkInsert('projects_details', [

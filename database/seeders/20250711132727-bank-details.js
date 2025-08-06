@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports = {
+export default{
   async up(queryInterface) {
     await queryInterface.bulkInsert('bank_details', [
       {
