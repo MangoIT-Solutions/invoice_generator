@@ -29,8 +29,15 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { InvoiceDatePicker } from "../ui/invoice-date-picker";
 import { ProjectDetails } from "@/database/models/interface";
-import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
-import { DropdownMenuContent, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 
 interface InvoiceItem {
@@ -74,12 +81,11 @@ export default function GenerateInvoice() {
     [key: string]: boolean;
   }>({});
 
-// recurring invoice state
+  // recurring invoice state
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<
     "once a month" | "twice a month" | null
   >(null);
-
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -193,7 +199,6 @@ export default function GenerateInvoice() {
       setIsLoading(false);
     }
   };
- 
 
   return (
     <div className="space-y-6">

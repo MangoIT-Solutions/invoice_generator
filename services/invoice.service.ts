@@ -168,6 +168,8 @@ export async function updateInvoiceFromPayload(payload: any) {
     invoice_date,
     Date_range,
     term,
+    status,
+    recurring_interval,
     project_code,
     payment_charges,
     items,
@@ -196,6 +198,7 @@ export async function updateInvoiceFromPayload(payload: any) {
   if (project_code) updateData.project_code = project_code;
   if (typeof payment_charges !== "undefined")
     updateData.payment_charges = payment_charges;
+  if (typeof status !== "undefined") updateData.status = status;
   if (payload.recurring_interval)
     updateData.recurring_interval = payload.recurring_interval;
 

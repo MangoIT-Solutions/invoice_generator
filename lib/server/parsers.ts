@@ -55,7 +55,7 @@ export async function parseEmailContentForCreating(
     items: [],
     subtotal: 0,
     total: 0,
-    status: "draft",
+    status: "sent",
   };
 
   const itemStart = lines.findIndex((l) =>
@@ -121,6 +121,11 @@ export async function parseEmailContentForUpdating(
     client_email: keyMap.client_email || "",
     project_code: keyMap.project_code || "",
     term: keyMap.term || "",
+    status: (() => {
+      const statusRaw = keyMap.status?.toLowerCase();
+      const validStatuses = ["draft", "sent", "fully_paid", "partially_paid"];
+      return validStatuses.includes(statusRaw) ? statusRaw : "sent";
+    })(),
     recurring_interval: (() => {
       const recurringRaw = keyMap.recurring_term?.toLowerCase();
       const validIntervals = ["once a month", "twice a month"];
