@@ -45,6 +45,7 @@ export class Invoice extends Model<
   declare lastInvoiceSendDate?: Date | null;
   declare recurring_interval?: null | "once a month" | "twice a month";
   declare status: "draft" | "sent" | "fully_paid" | "partially_paid";
+  senderEmail?: string;
   declare created_at: CreationOptional<Date>;
   static lastInvoiceSendDate: Date;
   declare items?: InvoiceItem[];
@@ -119,6 +120,11 @@ Invoice.init(
     lastInvoiceSendDate: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    senderEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
     },
     created_at: {
       type: DataTypes.DATE,

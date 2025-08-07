@@ -23,6 +23,7 @@ export async function parseEmailContentForCreating(
   userId: number
 ) {
   const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
+  console.log("Senders Email:", senderEmail);
 
   if (!bodyText || !senderEmail)
     throw new Error("No email body or sender email");

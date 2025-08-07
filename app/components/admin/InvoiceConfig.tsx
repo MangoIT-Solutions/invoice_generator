@@ -24,7 +24,7 @@ export default function InvoiceConfig() {
     current_number: 1000,
     invoiceRequestEmailAllowed: "",
     upaidInvoiceReminderDays: 0,
-    marginAmountForUnduePayment: "",
+    marginAmountForUnduePayment: "",  
   });
 
   useEffect(() => {

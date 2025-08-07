@@ -49,6 +49,7 @@ export interface Invoice {
   lastUnpaidReminderDate?: Date;
   recurring_interval?: null | "once a month" | "twice a month";
   lastInvoiceSendDate?: Date;
+  senderEmail?: string;
 }
 
 export interface InvoiceItem {

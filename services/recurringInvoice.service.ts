@@ -4,8 +4,7 @@ import { InvoiceItem } from "@/database/models/invoice-item.model";
 import { getCompanyConfig } from "@/services/company.service";
 import { getBankDetails } from "@/services/bank.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
-import { sendInvoiceEmail
- } from "@/lib/server/gmail/gmail.service";
+import { sendInvoiceEmail } from "@/lib/server/gmail/gmail.service";
 import { getNextInvoiceNumber } from "@/services/invoice.service";
 import path from "path";
 import { Op } from "sequelize";
@@ -98,15 +97,26 @@ export async function processRecurringInvoices(today: Date = new Date()) {
     );
 
     //  5. Send Email
+    // const { subject, message } = getInvoiceEmailContent("recurring", {
+    //   invoice_number: Number(invoiceNumber),
+    //   client_name: invoice.client_name,
+    //   client_email: invoice.senderEmail,
+    //   total: invoice.total,
+    // });
+
+    // await sendInvoiceEmail(invoice.senderEmail, subject, message, pdfPath);
+    const senderEmail = invoice.senderEmail ?? "";
+    if (!senderEmail) {
+      throw new Error("Sender email is missing for recurring invoice.");
+    }
     const { subject, message } = getInvoiceEmailContent("recurring", {
       invoice_number: Number(invoiceNumber),
       client_name: invoice.client_name,
-      client_email: invoice.client_email,
+      client_email: senderEmail,
       total: invoice.total,
     });
 
-    await sendInvoiceEmail
-(invoice.client_email, subject, message, pdfPath);
+    await sendInvoiceEmail(senderEmail, subject, message, pdfPath);
 
     // 6. Update original invoice's `lastInvoiceSendDate`
     invoice.lastInvoiceSendDate = today;
