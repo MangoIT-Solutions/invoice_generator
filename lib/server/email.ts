@@ -2,17 +2,6 @@ import { simpleParser } from "mailparser";
 import { gmail_v1 } from "googleapis";
 import Config from "@/database/models/config.model";
 
-// export async function extractSenderAndBody(rawBase64: string): Promise<{
-//   senderEmail: string;
-//   bodyText: string;
-// }> {
-//   const parsed = await simpleParser(Buffer.from(rawBase64, "base64"));
-//   const senderEmail = parsed.from?.text || "";
-//   console.log("Sender Email:", senderEmail);
-//   const bodyText = parsed.text || "";
-
-//   return { senderEmail, bodyText };
-// }
 export async function extractSenderAndBody(rawBase64: string): Promise<{
   senderEmail: string;
   bodyText: string;
