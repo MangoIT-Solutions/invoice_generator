@@ -7,8 +7,18 @@ export async function GET() {
   try {
     await initDB();
 
-    const config = await Config.findOne();
-    return NextResponse.json({ config });
+    const configs = await Config.findAll();
+
+    // Convert array of key-value rows into object
+    const configObject = configs.reduce(
+      (acc: Record<string, string>, item: any) => {
+        acc[item.keyIndex] = item.value;
+        return acc;
+      },
+      {}
+    );
+
+    return NextResponse.json({ config: configObject });
   } catch (error) {
     console.error("Error fetching invoice config:", error);
     return NextResponse.json(

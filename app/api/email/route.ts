@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { readInvoiceEmails } from "@/lib/server/gmail/gmail.service";
-import { sendInvoiceEmail
- } from "@/lib/server/gmail/gmail.service";
+import { sendInvoiceEmail } from "@/lib/server/gmail/gmail.service";
 import { updateInvoiceFromPayload } from "@/services/invoice.service";
 import { generateInvoicePdf } from "@/lib/invoicePdf";
 import { getCompanyConfig } from "@/services/company.service";
@@ -74,8 +73,7 @@ export async function GET() {
       });
 
       //  Send email with PDF
-      await sendInvoiceEmail
-(
+      await sendInvoiceEmail(
         invoice.payload.senderEmail,
         subject,
         textBody,
