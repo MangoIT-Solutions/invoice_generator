@@ -97,14 +97,6 @@ export async function processRecurringInvoices(today: Date = new Date()) {
     );
 
     //  5. Send Email
-    // const { subject, message } = getInvoiceEmailContent("recurring", {
-    //   invoice_number: Number(invoiceNumber),
-    //   client_name: invoice.client_name,
-    //   client_email: invoice.senderEmail,
-    //   total: invoice.total,
-    // });
-
-    // await sendInvoiceEmail(invoice.senderEmail, subject, message, pdfPath);
     const senderEmail = invoice.senderEmail ?? "";
     if (!senderEmail) {
       throw new Error("Sender email is missing for recurring invoice.");
