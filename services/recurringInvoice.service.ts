@@ -1,18 +1,14 @@
-import { NextResponse } from "next/server";
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-import { getCompanyConfig } from "@/services/company.service";
-import { getBankDetails } from "@/services/bank.service";
-import { generateInvoicePdf } from "@/lib/invoicePdf";
 import { sendInvoiceEmail } from "@/lib/server/gmail/gmail.service";
 import { getNextInvoiceNumber } from "@/services/invoice.service";
-import path from "path";
 import { Op } from "sequelize";
 import { addMonths, isSameDay } from "date-fns";
 import { getInvoiceEmailContent } from "@/lib/server/email";
-import { getInvoicePdfPaths } from "@/lib/invoicePdf";
+import { generateAndSaveInvoicePdf } from "@/services/invoice.service";
+import { duplicateInvoiceItems } from "@/services/invoice.service";
 
-export async function processRecurringInvoices(today: Date = new Date()) {
+export async function generateRecurringInvoices(today: Date = new Date()) {
   const day = today.getDate();
 
   //  Fetch all recurring invoices
@@ -63,37 +59,13 @@ export async function processRecurringInvoices(today: Date = new Date()) {
     });
 
     // 3. Duplicate Items
-    const itemsToCreate = (invoice.items ?? []).map((item) => ({
-      invoice_id: newInvoice.id,
-      description: item.description,
-      base_rate: item.base_rate,
-      unit: item.unit,
-      amount: item.amount,
-    }));
-    await InvoiceItem.bulkCreate(itemsToCreate);
-
-    // Re-fetch the new invoice with its items
-    const invoiceWithItems = {
-      ...newInvoice.toJSON(),
-      items: invoice.items,
-    };
+    await duplicateInvoiceItems(invoice.items ?? [], newInvoice.id);
 
     //  4. Generate PDF
-    const company = await getCompanyConfig();
-    const bank = await getBankDetails();
-    const { fileName: pdfFileName, filePath: pdfPath } = getInvoicePdfPaths(
+    const invoiceWithItems = { ...newInvoice.toJSON(), items: invoice.items };
+    const pdfPath = await generateAndSaveInvoicePdf(
+      invoiceWithItems,
       Number(invoiceNumber)
-    );
-
-    if (!company || !bank) {
-      throw new Error("Company or bank details missing.");
-    }
-    // Generate PDF
-    await generateInvoicePdf(
-      invoiceWithItems as any,
-      company,
-      bank,
-      pdfFileName
     );
 
     //  5. Send Email

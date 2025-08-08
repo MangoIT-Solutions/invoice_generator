@@ -7,7 +7,9 @@ export function startCronJob() {
   cron.schedule("*/1 * * * *", async () => {
     try {
       console.log(" Running email fetch cron job...");
-      await axios.get("http://localhost:3000/api/email");
+      await axios.get(
+        "http://localhost:3000/api/emails/invoices/create-update"
+      );
       console.log(" Email check completed");
     } catch (error) {
       console.error("Email cron error:", error);
@@ -18,7 +20,7 @@ export function startCronJob() {
   cron.schedule("*/1 * * * *", async () => {
     try {
       console.log("Running payment reminder check...");
-      await axios.get("http://localhost:3000/api/invoiceReminderEmail");
+      await axios.get("http://localhost:3000/api/emails/invoices/reminder");
       console.log("Payment reminder check completed");
     } catch (error) {
       console.error(" Payment reminder cron error:", error);
@@ -29,7 +31,7 @@ export function startCronJob() {
   cron.schedule("*/1 * * * *", async () => {
     try {
       console.log("Running recurring invoice generation cron job...");
-      await axios.get("http://localhost:3000/api/recurringInvoice");
+      await axios.get("http://localhost:3000/api/emails/invoices/recurring");
       console.log("Recurring Invoice generation completed");
     } catch (error) {
       console.error("Invoice generation cron error:", error);
@@ -40,7 +42,7 @@ export function startCronJob() {
   cron.schedule("*/1 * * * *", async () => {
     try {
       console.log("Running bank mail processing cron job...");
-      await axios.get("http://localhost:3000/api/bankMail");
+      await axios.get("http://localhost:3000/api/emails/bankMail");
       console.log("Bank mail processing completed");
     } catch (error) {
       console.error("Bank mail cron error:", error);

@@ -5,6 +5,8 @@ import Config from "@/database/models/config.model";
 import { User } from "@/database/models/user.model";
 import { Company } from "@/database/models/company.model";
 import { BankDetails } from "@/database/models/bank-details.model";
+import { generateInvoicePdf } from "@/lib/invoicePdf";
+import { getInvoicePdfPaths } from "@/lib/invoicePdf";
 
 export async function createInvoice(
   invoiceData: Omit<Invoice, "id" | "created_at">,
@@ -305,4 +307,35 @@ export async function updateInvoiceFromPayload(payload: any) {
     invoice: fullInvoice,
     message: "Invoice updated successfully",
   };
+}
+
+export async function generateAndSaveInvoicePdf(
+  invoice: any,
+  invoiceNumber: number
+) {
+  const company = await getCompanyConfig();
+  const bank = await getBankDetails();
+  const { fileName: pdfFileName, filePath: pdfPath } =
+    getInvoicePdfPaths(invoiceNumber);
+
+  if (!company || !bank) {
+    throw new Error("Company or bank details missing.");
+  }
+
+  await generateInvoicePdf(invoice, company, bank, pdfFileName);
+  return pdfPath;
+}
+
+export async function duplicateInvoiceItems(
+  items: any[],
+  newInvoiceId: number
+) {
+  const itemsToCreate = (items ?? []).map((item) => ({
+    invoice_id: newInvoiceId,
+    description: item.description,
+    base_rate: item.base_rate,
+    unit: item.unit,
+    amount: item.amount,
+  }));
+  await InvoiceItem.bulkCreate(itemsToCreate);
 }

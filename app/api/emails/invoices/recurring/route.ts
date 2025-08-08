@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { processRecurringInvoices } from "@/services/recurringInvoice.service";
+import { generateRecurringInvoices } from "@/services/recurringInvoice.service";
 
 export async function GET() {
   try {
-    const results = await processRecurringInvoices();
+    const results = await generateRecurringInvoices();
     return NextResponse.json({
       success: true,
       sent: results.length,

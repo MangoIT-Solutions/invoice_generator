@@ -102,9 +102,7 @@ export async function generateInvoicePdf(
 }
 
 export function getInvoicePdfPaths(invoiceNumber: number) {
-  console.log("⚙️ getInvoicePdfPaths received:", invoiceNumber);
   const fileName = `invoice-${invoiceNumber}.pdf`;
   const filePath = path.join(process.cwd(), "public", "invoices", fileName);
-  console.log("✅ PDF Path:", filePath);
   return { fileName, filePath };
 }

@@ -3,7 +3,7 @@ import { sendInvoiceEmail } from "@/lib/server/gmail/gmail.service";
 import Config from "../database/models/config.model";
 import { getInvoiceEmailContent } from "@/lib/server/email";
 
-export async function lastUnpaidReminderDate() {
+export async function sendUnpaidInvoiceReminders() {
   try {
     // Get reminder gap from config
     const configData = await Config.findOne({
