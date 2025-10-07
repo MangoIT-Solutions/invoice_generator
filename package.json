@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
     "@hookform/resolvers": "^3.3.7",
+    "@langchain/core": "^0.3.78",
+    "@langchain/google-genai": "^0.2.18",
     "@next/swc-wasm-nodejs": "15.3.4",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.5",
@@ -77,7 +79,8 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3.4.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",

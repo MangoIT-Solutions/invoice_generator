@@ -25,7 +25,6 @@ export async function GET() {
         const updateResult = await updateInvoiceFromPayload(invoice.payload);
         invoiceId = updateResult.invoice_id;
         invoiceNumber = invoice.payload.invoice_number;
-        console.log("✅ Updated invoice:", invoiceId);
 
         // ✅ Fetch updated invoice and items using Sequelize (as model instances)
         const updatedInvoice = await Invoice.findByPk(invoiceId, {
@@ -52,7 +51,6 @@ export async function GET() {
         const res = await sendInvoiceToApi(invoice.payload);
         invoiceId = res?.data?.invoiceId || res?.data?.id;
         invoiceNumber = res?.data?.invoiceNumber;
-        console.log("🆕 Created invoice:", invoiceId);
       }
 
       if (!invoiceId || !invoiceNumber) {
@@ -79,8 +77,6 @@ export async function GET() {
         textBody,
         pdfPath
       );
-
-      console.log("📧 Sent invoice email to:", invoice.payload.client_email);
 
       results.push({
         invoiceId,
