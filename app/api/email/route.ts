@@ -39,7 +39,7 @@ export async function GET() {
 
         // ✅ Fetch company and bank info (update if table name differs)
         const company = await getCompanyConfig();
-        const bank = await getBankDetails();
+        const bank:any = await getBankDetails();
 
         // ✅ Generate PDF
         await generateInvoicePdf(
