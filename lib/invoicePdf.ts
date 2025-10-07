@@ -34,8 +34,6 @@ export async function generateInvoicePdf(
   // Ensure invoices directory exists
   mkdirSync(pdfDir, { recursive: true });
 
-  const items = invoiceData.items.map((item) => item.get({ plain: true }));
-
   const htmlContent = generateInvoiceHtml(
     {
       ...invoiceData,
