@@ -14,6 +14,7 @@ import type { Invoice as InvoiceInstance } from "@/database/models/invoice.model
 import type { InvoiceItem as InvoiceItemInstance } from "@/database/models/invoice-item.model";
 import type { Company } from "@/database/models/company.model";
 import type { BankDetails } from "@/database/models/bank-details.model";
+import { parseInvoiceDate } from "@/lib/utilsServer";
 
 interface InvoiceWithItems {
   invoice: InvoiceInstance;
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     const invoiceNumber = await getNextInvoiceNumber();
     const invoice = {
       ...invoicePayload,
-      invoice_date: new Date().toISOString().split("T")[0],
+      invoice_date: parseInvoiceDate(invoicePayload.invoice_date),
       invoice_number: invoiceNumber,
     };
 

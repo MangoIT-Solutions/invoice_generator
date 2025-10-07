@@ -6,8 +6,35 @@ import { createMimeMessage } from "mimetext";
 import { getAutomateUser, getRefreshToken } from "@/services/google.service";
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-import { Op } from "sequelize";
 import { generateInvoiceHtmlBody } from "@/lib/utils";
+import { parseInvoiceUpdateEmail } from "./invoiceUpdateParser";
+import { parse, isValid, format } from "date-fns";
+
+// Helper to parse any date string and normalize to YYYY-MM-DD
+export function parseInvoiceDate(dateStr: string): string {
+  const formats = [
+    "dd/MM/yyyy",
+    "dd-MM-yyyy",
+    "yyyy/MM/dd",
+    "yyyy-MM-dd",
+    "MM/dd/yyyy",
+    "MM-dd-yyyy",
+  ];
+  if (!dateStr) {
+    return format(new Date(), "yyyy-MM-dd"); // default to today
+  }
+
+  dateStr = dateStr.trim();
+  for (const fmt of formats) {
+    const d = parse(dateStr, fmt, new Date());
+    if (isValid(d)) return format(d, "yyyy-MM-dd");
+  }
+
+  const fallback = new Date(dateStr);
+  if (isValid(fallback)) return format(fallback, "yyyy-MM-dd");
+
+  return format(new Date(), "yyyy-MM-dd");
+}
 
 // Sends parsed invoice data to API endpoint (`/api/invoices`) to create a new invoice record in DB.
 export async function sendInvoiceToApi(invoicePayload: any) {
@@ -16,7 +43,6 @@ export async function sendInvoiceToApi(invoicePayload: any) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(invoicePayload),
   });
-  console.log("Sending invoice to API:", invoicePayload);
   const data = await res.json();
   return { status: res.status, data };
 }
@@ -81,7 +107,6 @@ export async function sendInvoiceByGmail(
 export async function parseEmailsFromGmail() {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) throw new Error("No refresh token in DB");
-  console.log("refreshToken:", refreshToken);
 
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID!,
@@ -92,11 +117,6 @@ export async function parseEmailsFromGmail() {
   oauth2Client.setCredentials({ refresh_token: refreshToken });
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-  const accessToken = await oauth2Client.getAccessToken();
-  console.log("Access Token:", accessToken);
-  if (!accessToken) {
-    throw new Error("Failed to get access token");
-  }
 
   const label = process.env.GMAIL_QUERY_LABEL || "invoices";
   const subjectCreate = process.env.GMAIL_QUERY_SUBJECT || "Invoice Request";
@@ -123,7 +143,6 @@ export async function parseEmailsFromGmail() {
   const messages = response.data.messages || [];
   const parsedInvoices = [];
   const userId = await getAutomateUser();
-  console.log("Automate User ID:", userId);
 
   for (const message of messages) {
     if (!message.id) continue;
@@ -138,16 +157,13 @@ export async function parseEmailsFromGmail() {
       const parsedEmail = await simpleParser(
         Buffer.from(rawMsg.data.raw!, "base64")
       );
-      console.log("Parsed subject:", parsedEmail.subject);
       if (!parsedEmail.subject) {
         console.warn(`No subject found in message ${message.id}`);
         continue;
       }
       const subject = parsedEmail.subject || "";
-      console.log("📧 Email subject:", subject);
-
       if (subject.includes("Invoice Update")) {
-        const invoicePayload = await parseEmailContentForUpdating(
+        const invoicePayload = await extractInvoiceUpdateFromEmail(
           rawMsg.data.raw!,
           userId
         );
@@ -174,7 +190,7 @@ export async function parseEmailsFromGmail() {
       );
     }
   }
-  return { gmail, parsedInvoices, accessToken };
+  return { gmail, parsedInvoices };
 }
 
 // Parses the body of a Gmail email to extract invoice fields:
@@ -199,7 +215,7 @@ export async function parseEmailContentForCreating(
     client_address: "",
     client_email: "",
     invoice_date: new Date().toISOString().split("T")[0],
-    Date_range: "",
+    period: "",
     term: "",
     project_code: "",
     payment_charges: 0,
@@ -237,7 +253,7 @@ export async function parseEmailContentForCreating(
     } else if (lower.startsWith("term:")) {
       payload.term = getValue(line, "Term");
     } else if (lower.startsWith("date range:")) {
-      payload.Date_range = getValue(line, "Date Range");
+      payload.period = getValue(line, "Date Range");
     } else if (lower.startsWith("include transfer charges:")) {
       const val = getValue(line, "Include Transfer Charges").toLowerCase();
       if (val === "yes") payload.payment_charges = 35;
@@ -295,6 +311,128 @@ export async function extractSenderAndBody(rawBase64: string): Promise<{
 
   return { senderEmail, bodyText };
 }
+
+export function prepareInvoiceUpdatePayload(
+  aiResponse: {
+    invoiceNumber: number;
+    updates: Array<{
+      action: string;
+      field?: string;
+      value?: string | number;
+      baseRate?: number;
+      unit?: number;
+      amount?: number;
+      description?: string;
+    }>;
+  },
+  userId: number,
+  senderEmail: string
+) {
+  const payload: any = {
+    invoice_number: aiResponse.invoiceNumber,
+    user_id: userId,
+    senderEmail,
+    items: { add: [], remove: [], replace: [] },
+  };
+
+  let subtotal = 0;
+
+  const computeAmount = (baseRate?: number, unit?: number, amount?: number) =>
+    amount ?? (baseRate && unit ? baseRate * unit : undefined);
+
+  for (const update of aiResponse.updates) {
+    const action = update.action?.toLowerCase();
+    const field = update.field?.toLowerCase();
+
+    switch (action) {
+      // ----------- FIELD UPDATES -----------
+      case "update":
+        if (!field || update.value === undefined) break;
+
+        const stringValue = String(update.value).trim();
+
+        const fieldMap: Record<string, (val: string) => void> = {
+          clientname: (v) => (payload.client_name = v),
+          clientcompanyname: (v) => (payload.client_company_name = v),
+          clientemail: (v) => (payload.client_email = v),
+          clientaddress: (v) => (payload.client_address = v),
+          invoicedate: (v) => (payload.invoice_date = parseInvoiceDate(v)),
+          daterange: (v) => (payload.period = v),
+          term: (v) => (payload.term = v),
+          projectcode: (v) => (payload.project_code = v),
+          transfercharges: (v) =>
+            (payload.payment_charges = [
+              "yes",
+              "true",
+              "1",
+              "include",
+              "included",
+            ].includes(v.toLowerCase())
+              ? 35
+              : 0),
+          status: (v) => (payload.status = v.toLowerCase()),
+        };
+
+        if (fieldMap[field]) fieldMap[field](stringValue);
+        break;
+
+      // ----------- REMOVE ITEM -----------
+      case "removeitem":
+        if (update.description || update.value) {
+          payload.items.remove.push(String(update.description ?? update.value));
+        }
+        break;
+
+      // ----------- ADD / UPDATE ITEM -----------
+      case "additem":
+      case "updateitem": {
+        if (!update.description && !update.value) break;
+        const item = {
+          description: update.description ?? String(update.value),
+          base_rate: update.baseRate,
+          unit: update.unit,
+          amount: computeAmount(update.baseRate, update.unit, update.amount),
+        };
+        payload.items[action === "additem" ? "add" : "replace"].push(item);
+        if (item.amount) subtotal += item.amount;
+        break;
+      }
+
+      default:
+        console.warn(`Unknown action: ${update.action}`);
+    }
+  }
+
+  if (subtotal > 0) payload.subtotal = subtotal;
+
+  payload.total = (payload.subtotal || 0) + (payload.payment_charges || 0);
+
+  return payload;
+}
+
+export async function extractInvoiceUpdateFromEmail(
+  rawBase64Data: string,
+  userId: number
+) {
+  const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
+
+  if (!bodyText || !senderEmail) {
+    throw new Error("No body text or Email found in email");
+  }
+
+  // Get structured update info from AI (Gemini)
+  const structured = await parseInvoiceUpdateEmail(bodyText);
+
+  // Convert AI structured response into your final invoice payload
+  const result = await prepareInvoiceUpdatePayload(
+    structured,
+    userId,
+    senderEmail
+  );
+
+  return result;
+}
+
 // Parses the email to extract update actions:
 export async function parseEmailContentForUpdating(
   rawBase64Data: string,
@@ -423,14 +561,15 @@ export async function parseEmailContentForUpdating(
 }
 
 // Updates an existing invoice based on the provided payload.
-export async function updateInvoiceFromPayload(payload) {
+export async function updateInvoiceFromPayload(payload: any) {
   const {
     invoice_number,
     client_name,
+    client_company_name,
     client_address,
     client_email,
     invoice_date,
-    Date_range,
+    period,
     term,
     project_code,
     payment_charges,
@@ -452,10 +591,11 @@ export async function updateInvoiceFromPayload(payload) {
   // Step 2: Update invoice fields
   const updateData: any = {};
   if (client_name) updateData.client_name = client_name;
+  if (client_company_name) updateData.client_company_name = client_company_name;
   if (client_address) updateData.client_address = client_address;
   if (client_email) updateData.client_email = client_email;
   if (invoice_date) updateData.invoice_date = invoice_date;
-  if (Date_range) updateData.period = Date_range;
+  if (period) updateData.period = period;
   if (term) updateData.term = term;
   if (project_code) updateData.project_code = project_code;
   if (typeof payment_charges !== "undefined")

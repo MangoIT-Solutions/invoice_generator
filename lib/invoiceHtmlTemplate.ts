@@ -15,10 +15,7 @@ export function generateInvoiceHtml(
   company: Partial<Company>,
   bank: Partial<BankDetails>
 ): string {
-  const itemData = items;
   const companyData = company;
-  const bankData = bank;
-  console.log("formatDateToMDY", formatDateToMDY);
   const logoFileName = companyData.company_logo || "default_logo.png";
   const logoFilePath = path.join(
     process.cwd(),

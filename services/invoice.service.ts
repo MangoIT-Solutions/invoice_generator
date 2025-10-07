@@ -5,6 +5,7 @@ import InvoiceConfig from "@/database/models/config.model";
 import { User } from "@/database/models/user.model";
 import { Company } from "@/database/models/company.model";
 import { BankDetails } from "@/database/models/bank-details.model";
+import { Sequelize } from "sequelize";
 
 export async function createInvoice(
   invoiceData: Omit<Invoice, "id" | "created_at">,
@@ -37,18 +38,25 @@ export async function createInvoice(
 
 export async function getNextInvoiceNumber(): Promise<string> {
   try {
-    const config = await InvoiceConfig.findOne();
-    if (!config) throw new Error("InvoiceConfig not found");
+    // Fetch the latest invoice (numerically sorted)
+    const lastInvoice = await Invoice.findOne({
+      attributes: ["invoice_number"],
+      order: [[Sequelize.cast(Sequelize.col("invoice_number"), "SIGNED"), "DESC"]],
+    });
 
-    const currentNumber =
-      config.current_number < config.starting_number
-        ? config.starting_number
-        : config.current_number;
+    if (lastInvoice?.invoice_number) {
+      return (parseInt(lastInvoice.invoice_number, 10) + 1).toString();
+    }
 
-    config.current_number = currentNumber + 1;
-    await config.save();
+    // Fallback: use configured starting number
+    const config = await InvoiceConfig.findOne({
+      where: { key: "starting_number" },
+      attributes: ["value"],
+    });
 
-    return currentNumber.toString();
+    const startingNumber = parseInt(config?.getDataValue("value") ?? "1000", 10);
+
+    return startingNumber.toString();
   } catch (error) {
     console.error("Error getting next invoice number:", error);
     return "1000";
