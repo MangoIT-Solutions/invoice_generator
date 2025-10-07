@@ -34,6 +34,8 @@ export async function GET() {
         if (!updatedInvoice) {
           throw new Error("Updated invoice not found");
         }
+        
+        const invoiceData = updatedInvoice.get({ plain: true });
 
         // ✅ Fetch company and bank info (update if table name differs)
         const company = await getCompanyConfig();
@@ -41,7 +43,7 @@ export async function GET() {
 
         // ✅ Generate PDF
         await generateInvoicePdf(
-          updatedInvoice as any, // InvoiceWithItems type
+          invoiceData as any, // InvoiceWithItems type
           company,
           bank,
           `invoice-${invoiceNumber}.pdf`
