@@ -1,11 +1,13 @@
 // services/invoice.service.ts
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-import InvoiceConfig from "@/database/models/config.model";
+import Config from "@/database/models/config.model";
 import { User } from "@/database/models/user.model";
 import { Company } from "@/database/models/company.model";
 import { BankDetails } from "@/database/models/bank-details.model";
 import { Sequelize } from "sequelize";
+import { generateInvoicePdf } from "@/lib/invoicePdf";
+import { getInvoicePdfPaths } from "@/lib/invoicePdf";
 
 export async function createInvoice(
   invoiceData: Omit<Invoice, "id" | "created_at">,
@@ -24,7 +26,7 @@ export async function createInvoice(
       ...item,
       invoice_id: invoiceId,
     }));
-
+    console.log("Creating invoice items:", itemsWithInvoiceId);
     await InvoiceItem.bulkCreate(itemsWithInvoiceId, { transaction });
 
     await transaction.commit();
@@ -49,7 +51,7 @@ export async function getNextInvoiceNumber(): Promise<string> {
     }
 
     // Fallback: use configured starting number
-    const config = await InvoiceConfig.findOne({
+    const config = await Config.findOne({
       where: { key: "starting_number" },
       attributes: ["value"],
     });
@@ -58,7 +60,7 @@ export async function getNextInvoiceNumber(): Promise<string> {
 
     return startingNumber.toString();
   } catch (error) {
-    console.error("Error getting next invoice number:", error);
+    console.error("❌ Error generating next invoice number:", error);
     return "1000";
   }
 }
@@ -73,7 +75,7 @@ export async function getUserInvoices(userId?: number) {
         {
           model: User,
           attributes: ["id", "username"],
-          as: "user", // this must match your Invoice.belongsTo(User, { as: 'user' })
+          as: "user",
         },
       ],
       order: [["created_at", "DESC"]],
@@ -94,7 +96,7 @@ export async function getInvoiceWithItems(invoiceId: number) {
       include: [
         {
           model: InvoiceItem,
-          as: "items", // 👈 This must match the alias in hasMany()
+          as: "items",
         },
       ],
     });
@@ -103,7 +105,7 @@ export async function getInvoiceWithItems(invoiceId: number) {
 
     return {
       invoice: invoice.get({ plain: true }),
-      items: (invoice as any).items, // Or use `.getDataValue('items')` if needed
+      items: (invoice as any).items,
     };
   } catch (error) {
     console.error("Error fetching invoice with items:", error);
@@ -135,4 +137,184 @@ export async function getBankDetails() {
     console.error("Error fetching bank details:", error);
     return null;
   }
+}
+
+// Updates an existing invoice based on the provided payload.
+export async function updateInvoiceFromPayload(payload: any) {
+  const {
+    invoice_number,
+    client_name,
+    client_address,
+    client_email,
+    invoice_date,
+    Date_range,
+    term,
+    status,
+    recurring_interval,
+    project_code,
+    payment_charges,
+    items,
+  } = payload;
+
+  if (!invoice_number) throw new Error("Invoice number is required");
+
+  // Step 1: Fetch invoice
+  const invoice = await Invoice.findOne({
+    where: { invoice_number },
+    attributes: ["id", "payment_charges"],
+  });
+
+  if (!invoice) throw new Error("Invoice not found");
+
+  const invoiceId = invoice.id;
+
+  // Step 2: Update invoice fields
+  const updateData: any = {};
+  if (client_name) updateData.client_name = client_name;
+  if (client_address) updateData.client_address = client_address;
+  if (client_email) updateData.client_email = client_email;
+  if (invoice_date) updateData.invoice_date = invoice_date;
+  if (Date_range) updateData.period = Date_range;
+  if (term) updateData.term = term;
+  if (project_code) updateData.project_code = project_code;
+  if (typeof payment_charges !== "undefined")
+    updateData.payment_charges = payment_charges;
+  if (typeof status !== "undefined") updateData.status = status;
+  if (payload.recurring_interval)
+    updateData.recurring_interval = payload.recurring_interval;
+
+  if (Object.keys(updateData).length) {
+    await Invoice.update(updateData, { where: { invoice_number } });
+  }
+
+  // Step 3: Remove items
+  if (items?.remove?.length) {
+    for (const desc of items.remove) {
+      await InvoiceItem.destroy({
+        where: {
+          invoice_id: invoiceId,
+          description: desc,
+        },
+      });
+    }
+  }
+
+  // Step 4: Add items
+  if (items?.add?.length) {
+    for (const item of items.add) {
+      const desc = item.description.trim();
+
+      const existingItem = await InvoiceItem.findOne({
+        where: {
+          invoice_id: invoiceId,
+          description: desc,
+        },
+      });
+
+      if (existingItem) {
+        console.log("Duplicate found:", existingItem.toJSON());
+        continue;
+      }
+
+      const created = await InvoiceItem.create({
+        invoice_id: invoiceId,
+        description: desc,
+        base_rate: item.base_rate,
+        unit: item.unit,
+        amount: item.amount,
+      });
+    }
+  }
+
+  // Step 5: Replace items (update)
+  if (items?.replace?.length) {
+    for (const item of items.replace) {
+      await InvoiceItem.update(
+        {
+          base_rate: item.base_rate,
+          unit: item.unit,
+          amount: item.amount,
+        },
+        {
+          where: {
+            invoice_id: invoiceId,
+            description: item.description,
+          },
+        }
+      );
+    }
+  }
+
+  // Step 6: Recalculate totals
+  const updatedItems = await InvoiceItem.findAll({
+    where: { invoice_id: invoiceId },
+    attributes: ["amount"],
+  });
+
+  const subtotal = updatedItems.reduce(
+    (sum, item) => sum + Number(item.amount),
+    0
+  );
+
+  const finalCharges =
+    typeof payment_charges !== "undefined"
+      ? payment_charges
+      : invoice.payment_charges;
+
+  const total = subtotal + Number(finalCharges);
+
+  await Invoice.update({ subtotal, total }, { where: { id: invoiceId } });
+
+  const fullInvoice = await Invoice.findOne({
+    where: { id: invoiceId },
+    include: [
+      {
+        model: InvoiceItem,
+        as: "items",
+        attributes: ["description", "base_rate", "unit", "amount"],
+      },
+    ],
+  });
+  if (!fullInvoice) {
+    throw new Error("Updated invoice not found");
+  }
+
+  return {
+    status: "success",
+    invoice_id: invoiceId,
+    invoice_number,
+    invoice: fullInvoice,
+    message: "Invoice updated successfully",
+  };
+}
+
+export async function generateAndSaveInvoicePdf(
+  invoice: any,
+  invoiceNumber: number
+) {
+  const company = await getCompanyConfig();
+  const bank: any = await getBankDetails();
+  const { fileName: pdfFileName, filePath: pdfPath } =
+    getInvoicePdfPaths(invoiceNumber);
+
+  if (!company || !bank) {
+    throw new Error("Company or bank details missing.");
+  }
+
+  await generateInvoicePdf(invoice, company, bank, pdfFileName);
+  return pdfPath;
+}
+
+export async function duplicateInvoiceItems(
+  items: any[],
+  newInvoiceId: number
+) {
+  const itemsToCreate = (items ?? []).map((item) => ({
+    invoice_id: newInvoiceId,
+    description: item.description,
+    base_rate: item.base_rate,
+    unit: item.unit,
+    amount: item.amount,
+  }));
+  await InvoiceItem.bulkCreate(itemsToCreate);
 }

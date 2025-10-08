@@ -17,7 +17,6 @@ export async function GET() {
     "https://www.googleapis.com/auth/gmail.send",
     "https://www.googleapis.com/auth/userinfo.email",
   ];
-  console.log("Generating Google OAuth URL with scopes:", scopes);
 
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -25,7 +24,6 @@ export async function GET() {
     scope: scopes,
     include_granted_scopes: false,
   });
-  console.log("Generated Google OAuth URL:", url);
 
   return NextResponse.json({ url });
 }

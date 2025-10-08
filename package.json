@@ -2,12 +2,13 @@
   "name": "nextjs",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "cron": "ts-node lib/cron/Job.ts"
+    "cron": "node --loader ts-node/esm lib/cron/Job.ts" 
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
@@ -95,7 +96,8 @@
     "postcss-import": "^16.1.1",
     "postcss-nesting": "^13.0.2",
     "sequelize": "^6.37.7",
-    "sequelize-cli": "^6.6.3"
+    "sequelize-cli": "^6.6.3",
+    "ts-node": "^10.9.2"
   },
   "resolutions": {
     "rimraf": ">=4.0.0",

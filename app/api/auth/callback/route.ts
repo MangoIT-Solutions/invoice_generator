@@ -30,8 +30,6 @@ export async function GET(req: NextRequest) {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    console.log("OAuth tokens received:", tokens);
-    console.log("Granted scopes:", tokens.scope);
     if (!tokens.scope?.includes("gmail.readonly")) {
       return NextResponse.json(
         { error: "Missing required Gmail scopes" },
@@ -42,7 +40,6 @@ export async function GET(req: NextRequest) {
     const refreshToken = tokens.refresh_token;
     const accessToken = tokens.access_token;
 
-    console.log("Scopes granted:", oauth2Client.credentials.scope);
 
     if (!refreshToken || !accessToken) {
       return NextResponse.json(
@@ -65,7 +62,6 @@ export async function GET(req: NextRequest) {
     }
     // Save refresh token and email
     await saveRefreshToken(refreshToken, email);
-
     return NextResponse.redirect(new URL("/google-authentication", req.url));
   } catch (error) {
     console.error("OAuth Callback Error:", error);
