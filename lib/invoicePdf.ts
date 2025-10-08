@@ -90,3 +90,9 @@ export async function generateInvoicePdf(
     await browser.close();
   }
 }
+
+export function getInvoicePdfPaths(invoiceNumber: number) {
+  const fileName = `invoice-${invoiceNumber}.pdf`;
+  const filePath = path.join(process.cwd(), "public", "invoices", fileName);
+  return { fileName, filePath };
+}

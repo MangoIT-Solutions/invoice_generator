@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { parse, isValid, format } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -108,13 +109,28 @@ export function formatPeriod(period: string): string {
   return trimmedPeriod;
 }
 
-export function generateInvoiceHtmlBody() {
-  return `
-    <div style="font-family: Arial, sans-serif; color: #333;">
-      <h4>Dear Customer</h4>
-      <p>Thank you for your business. Please find your invoice attached as a PDF.</p>
-      <p>If you have any questions, feel free to reply to this email.</p>
-      <p style="margin-top: 30px;">Warm regards,<br><strong>The InvoiceBot Team</strong></p>
-    </div>
-  `;
+// Helper to parse any date string and normalize to YYYY-MM-DD
+export function parseInvoiceDate(dateStr: string): string {
+  const formats = [
+    "dd/MM/yyyy",
+    "dd-MM-yyyy",
+    "yyyy/MM/dd",
+    "yyyy-MM-dd",
+    "MM/dd/yyyy",
+    "MM-dd-yyyy",
+  ];
+  if (!dateStr) {
+    return format(new Date(), "yyyy-MM-dd"); // default to today
+  }
+
+  dateStr = dateStr.trim();
+  for (const fmt of formats) {
+    const d = parse(dateStr, fmt, new Date());
+    if (isValid(d)) return format(d, "yyyy-MM-dd");
+  }
+
+  const fallback = new Date(dateStr);
+  if (isValid(fallback)) return format(fallback, "yyyy-MM-dd");
+
+  return format(new Date(), "yyyy-MM-dd");
 }

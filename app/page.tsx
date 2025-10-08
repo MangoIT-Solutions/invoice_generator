@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useAuth } from './context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import LoginForm from './components/LoginForm';
+import { useAuth } from "./context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import LoginForm from "./components/LoginForm";
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -11,10 +11,10 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      if (user.role === 'admin') {
-        router.push('/admin');
+      if (user.role === "admin") {
+        router.push("/admin");
       } else {
-        router.push('/dashboard');
+        router.push("/dashboard");
       }
     }
   }, [user, isLoading, router]);
@@ -22,10 +22,9 @@ export default function Home() {
   if (isLoading) {
     return (
       <>
-      
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
       </>
     );
   }

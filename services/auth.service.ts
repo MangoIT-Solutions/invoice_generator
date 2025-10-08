@@ -9,7 +9,7 @@ export interface AuthUser {
   role: "admin" | "user";
 }
 
-// ✅ Authenticate user
+//  Authenticate user
 export async function authenticateUser(
   email: string,
   password: string
@@ -36,7 +36,7 @@ export async function authenticateUser(
   }
 }
 
-// ✅ Create user
+// Create user
 export async function createUser(
   username: string,
   email: string,
@@ -58,7 +58,7 @@ export async function createUser(
   }
 }
 
-// ✅ Get all users
+// Get all users
 export async function getAllUsers() {
   try {
     const users = await User.findAll({
@@ -72,7 +72,7 @@ export async function getAllUsers() {
   }
 }
 
-// ✅ Delete user (except admin)
+// Delete user (except admin)
 export async function deleteUser(id: number) {
   try {
     await User.destroy({

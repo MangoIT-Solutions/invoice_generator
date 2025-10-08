@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Download, Mail, ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Download, Mail, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface InvoiceData {
   invoice: any;
@@ -22,9 +26,11 @@ export default function InvoiceView() {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [emailForm, setEmailForm] = useState({
-    to: invoiceData?.invoice?.client_email || '',
-    subject: invoiceData ? `Invoice #${invoiceData.invoice.invoice_number}` : '',
-    message: 'Please find attached your invoice.'
+    to: invoiceData?.invoice?.client_email || "",
+    subject: invoiceData
+      ? `Invoice #${invoiceData.invoice.invoice_number}`
+      : "",
+    message: "Please find attached your invoice.",
   });
   const params = useParams();
   const router = useRouter();
@@ -36,9 +42,9 @@ export default function InvoiceView() {
 
   const fetchInvoice = async () => {
     try {
-      if (!params || !('id' in params) || !params.id) {
-        toast.error('Invalid invoice ID');
-        router.push('/dashboard');
+      if (!params || !("id" in params) || !params.id) {
+        toast.error("Invalid invoice ID");
+        router.push("/dashboard");
         setIsLoading(false);
         return;
       }
@@ -47,11 +53,11 @@ export default function InvoiceView() {
       if (response.ok) {
         setInvoiceData(data);
       } else {
-        toast.error('Invoice not found');
-        router.push('/dashboard');
+        toast.error("Invoice not found");
+        router.push("/dashboard");
       }
     } catch (error) {
-      toast.error('Failed to fetch invoice');
+      toast.error("Failed to fetch invoice");
     } finally {
       setIsLoading(false);
     }
@@ -59,18 +65,18 @@ export default function InvoiceView() {
 
   const generatePDF = async () => {
     try {
-      if (!params || !('id' in params) || !params.id) {
-        toast.error('Invalid invoice ID');
+      if (!params || !("id" in params) || !params.id) {
+        toast.error("Invalid invoice ID");
         return;
       }
       const response = await fetch(`/api/invoices/${params.id}/pdf`);
       if (!response.ok) {
-        throw new Error('Failed to fetch PDF');
+        throw new Error("Failed to fetch PDF");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `invoice-${invoiceData?.invoice.invoice_number}.pdf`;
       document.body.appendChild(a);
@@ -78,31 +84,31 @@ export default function InvoiceView() {
       window.URL.revokeObjectURL(url);
       a.remove();
     } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast.error('Failed to download PDF');
+      console.error("Error downloading PDF:", error);
+      toast.error("Failed to download PDF");
     }
   };
 
   const sendEmail = async () => {
     try {
-      if (!params || !('id' in params) || !params.id) {
-        toast.error('Invalid invoice ID');
+      if (!params || !("id" in params) || !params.id) {
+        toast.error("Invalid invoice ID");
         return;
       }
       const response = await fetch(`/api/invoices/${params.id}/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailForm)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailForm),
       });
       const data = await response.json();
       if (response.ok) {
-        toast.success('Invoice sent successfully');
+        toast.success("Invoice sent successfully");
         setDialogOpen(false);
       } else {
-        toast.error(data.error || 'Failed to send invoice');
+        toast.error(data.error || "Failed to send invoice");
       }
     } catch (error) {
-      toast.error('Failed to send email');
+      toast.error("Failed to send email");
     }
   };
 
@@ -117,7 +123,6 @@ export default function InvoiceView() {
   if (!invoiceData) {
     return null;
   }
-
   const { invoice, items, company, bank } = invoiceData;
 
   return (
@@ -151,7 +156,7 @@ export default function InvoiceView() {
             <div
               ref={invoiceRef}
               className="bg-white border-2 border-gray-900 rounded-md"
-              style={{ boxSizing: 'border-box' }}
+              style={{ boxSizing: "border-box" }}
             >
               <div className="px-6">
                 {/* Company Info Row */}
@@ -160,7 +165,15 @@ export default function InvoiceView() {
                   <div className="w-48">
                     {company?.company_logo && (
                       <img
-                        src={company.company_logo.startsWith('uploads/') || company.company_logo.startsWith('/uploads/') ? `/` + company.company_logo.replace(/^\/+/, '') : `/uploads/${company.company_logo.replace(/^\/+/, '')}`}
+                        src={
+                          company.company_logo.startsWith("uploads/") ||
+                          company.company_logo.startsWith("/uploads/")
+                            ? `/` + company.company_logo.replace(/^\/+/, "")
+                            : `/uploads/${company.company_logo.replace(
+                                /^\/+/,
+                                ""
+                              )}`
+                        }
                         alt="Company Logo"
                         className="h-16 object-contain bg-white border border-gray-200 mt-1 ml-[-20px]"
                       />
@@ -169,19 +182,32 @@ export default function InvoiceView() {
 
                   {/* Company Details - Right Aligned */}
                   <div className="">
-                    <h1 className="text-xl font-bold">{company?.name || 'Mango IT Solutions'}</h1>
+                    <h1 className="text-xl font-bold">
+                      {company?.name || "Mango IT Solutions"}
+                    </h1>
                     <p className="text-sm mt-1">a web & mobile dev company</p>
                     <div className="text-xs mt-1 space-y-0.5">
-                      <p>{company?.address || '15/3 Old Palasia, Behind Sarda House, Indore 452 001 INDIA'}</p>
-                      <p>{company?.contact || '+91-731-4044117'} / {company?.email || 'accounts@mangoitsolutions.com'}</p>
-                      <p>GSTIN-23XXXXXPS9604H1Z1 {/*company?.hsn_sac  && `• HSN / SAC: ${company.hsn_sac}` */ }</p>
+                      <p>
+                        {company?.address ||
+                          "15/3 Old Palasia, Behind Sarda House, Indore 452 001 INDIA"}
+                      </p>
+                      <p>
+                        {company?.contact || "+91-731-4044117"} /{" "}
+                        {company?.email || "accounts@mangoitsolutions.com"}
+                      </p>
+                      <p>
+                        GSTIN-23XXXXXPS9604H1Z1{" "}
+                        {/*company?.hsn_sac  && `• HSN / SAC: ${company.hsn_sac}` */}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Invoice Title */}
                 <div className="mt-4 -mx-6 px-6 border-t-2 border-b-2 border-black text-center">
-                  <h2 className="text-lg font-bold py-1">Software Service Invoice</h2>
+                  <h2 className="text-lg font-bold py-1">
+                    Software Service Invoice
+                  </h2>
                 </div>
               </div>
 
@@ -191,11 +217,18 @@ export default function InvoiceView() {
                 <div className="w-1/2 pr-4 p-2 border-r-2 border-black">
                   <h3 className="text-sm font-bold mb-1">Bill To</h3>
                   <div className="text-xs mb-1">
-                    <p className="font-bold">{invoice.client_company_name || invoice.client_name}</p>
-                    <p>{invoice.client_address?.replace(/\n|\r/g, ', ')}</p>
+                    <p className="font-bold">
+                      {invoice.client_company_name || invoice.client_name}
+                    </p>
+                    <p>{invoice.client_address?.replace(/\n|\r/g, ", ")}</p>
                   </div>
                   <div className="text-xs">
-                    <p>KA: <span className="font-bold py-2">{company.admin_name}</span></p>
+                    <p>
+                      KA:{" "}
+                      <span className="font-bold py-2">
+                        {company.admin_name}
+                      </span>
+                    </p>
                     <p>Email: {invoice.client_email}</p>
                   </div>
                 </div>
@@ -206,7 +239,17 @@ export default function InvoiceView() {
                     <tbody>
                       <tr>
                         <td className="w-24 py-0.5">Date:</td>
-                        <td className="py-0.5">{invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-') : ''}</td>
+                        <td className="py-0.5">
+                          {invoice.invoice_date
+                            ? new Date(invoice.invoice_date)
+                                .toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "2-digit",
+                                })
+                                .replace(/ /g, "-")
+                            : ""}
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-0.5">Invoice No.:</td>
@@ -214,35 +257,46 @@ export default function InvoiceView() {
                       </tr>
                       <tr>
                         <td className="py-0.5">Period:</td>
-                        
-                        <td className="py-0.5">
-                          {invoice.period 
-                            ? (() => {
-                                const [start, end] = invoice.period.split('-').map((s: string) => s.trim());
 
-                                const formatDate = (dateStr: string): string => {
-                                  const [day, month, year] = dateStr.split('/');
-                                  const dateObj = new Date(`${year}-${month}-${day}`);
-                                  return dateObj.toLocaleDateString('en-GB', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: '2-digit',
-                                  }).replace(/ /g, '-');
+                        <td className="py-0.5">
+                          {invoice.period
+                            ? (() => {
+                                const [start, end]: [string, string] =
+                                  invoice.period.split("-");
+                                const formatDate = (
+                                  dateStr: string
+                                ): string => {
+                                  const [day, month, year] = dateStr.split("/");
+                                  const dateObj = new Date(
+                                    `${year}-${month}-${day}`
+                                  );
+                                  return dateObj
+                                    .toLocaleDateString("en-GB", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "2-digit",
+                                    })
+                                    .replace(/ /g, "-");
                                 };
 
-                                return `${formatDate(start)} to ${formatDate(end)}`;
+                                return `${formatDate(start)} to ${formatDate(
+                                  end
+                                )}`;
                               })()
-                            : 'N/A'}
+                            : "N/A"}
                         </td>
-
                       </tr>
                       <tr>
                         <td className="py-0.5">Term:</td>
-                        <td className="py-0.5">{invoice.term || 'On receipt'}</td>
+                        <td className="py-0.5">
+                          {invoice.term || "On receipt"}
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-0.5">Project code:</td>
-                        <td className="py-0.5">{invoice.project_code || 'N/A'}</td>
+                        <td className="py-0.5">
+                          {invoice.project_code || "N/A"}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -254,13 +308,32 @@ export default function InvoiceView() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b-2 border-t-2 border-black">
-                      <th className="px-3 py-1 text-left text-sm font-bold" rowSpan={2}>Description</th>
-                      <th className="px-3 py-1 text-center text-sm font-bold border-l border-black" colSpan={2}>Rate</th>
-                      <th className="px-3 py-1 text-right text-sm font-bold border-l border-black" rowSpan={2}>Amount (USD)</th>
+                      <th
+                        className="px-3 py-1 text-left text-sm font-bold"
+                        rowSpan={2}
+                      >
+                        Description
+                      </th>
+                      <th
+                        className="px-3 py-1 text-center text-sm font-bold border-l border-black"
+                        colSpan={2}
+                      >
+                        Rate
+                      </th>
+                      <th
+                        className="px-3 py-1 text-right text-sm font-bold border-l border-black"
+                        rowSpan={2}
+                      >
+                        Amount (USD)
+                      </th>
                     </tr>
                     <tr className="border-b-2 border-black">
-                      <th className="px-3 py-1 text-center text-sm font-bold border-l border-black">Base</th>
-                      <th className="px-3 py-1 text-center text-sm font-bold border-l border-r border-black">Unit</th>
+                      <th className="px-3 py-1 text-center text-sm font-bold border-l border-black">
+                        Base
+                      </th>
+                      <th className="px-3 py-1 text-center text-sm font-bold border-l border-r border-black">
+                        Unit
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -269,27 +342,43 @@ export default function InvoiceView() {
                         <td className="px-3 py-2 align-top">
                           <div className="text-sm">{item.description}</div>
                           {item.details && (
-                            <div className="text-xs text-gray-500 mt-1 whitespace-pre-line">{item.details}</div>
+                            <div className="text-xs text-gray-500 mt-1 whitespace-pre-line">
+                              {item.details}
+                            </div>
                           )}
                         </td>
                         <td className="px-3 py-2 text-right align-top text-sm border-l border-black">
-                          {typeof item.base_rate === 'number' ? item.base_rate.toFixed(2) : Number(item.base_rate ?? 0).toFixed(2)}
+                          {typeof item.base_rate === "number"
+                            ? item.base_rate.toFixed(2)
+                            : Number(item.base_rate ?? 0).toFixed(2)}
                         </td>
                         <td className="px-3 py-2 text-right align-top text-sm border-l border-r border-black">
-                          {typeof item.unit === 'number' ? item.unit : Number(item.unit ?? 0)}
+                          {typeof item.unit === "number"
+                            ? item.unit
+                            : Number(item.unit ?? 0)}
                         </td>
                         <td className="px-3 py-2 text-right align-top text-sm border-l border-black">
-                          {typeof item.amount === 'number' ? item.amount.toFixed(2) : Number(item.amount ?? 0).toFixed(2)}
+                          {typeof item.amount === "number"
+                            ? item.amount.toFixed(2)
+                            : Number(item.amount ?? 0).toFixed(2)}
                         </td>
                       </tr>
                     ))}
                     {invoice.payment_charges > 0 && (
                       <tr className="border-b border-black">
-                        <td className="px-3 py-2 text-sm">Payment Transfer Charges</td>
-                        <td className="px-3 py-2 text-right text-sm border-l border-black">35.00</td>
-                        <td className="px-3 py-2 text-right text-sm border-l border-r border-black">1</td>
+                        <td className="px-3 py-2 text-sm">
+                          Payment Transfer Charges
+                        </td>
                         <td className="px-3 py-2 text-right text-sm border-l border-black">
-                          {typeof invoice.payment_charges === 'number' ? invoice.payment_charges.toFixed(2) : Number(invoice.payment_charges ?? 0).toFixed(2)}
+                          35.00
+                        </td>
+                        <td className="px-3 py-2 text-right text-sm border-l border-r border-black">
+                          1
+                        </td>
+                        <td className="px-3 py-2 text-right text-sm border-l border-black">
+                          {typeof invoice.payment_charges === "number"
+                            ? invoice.payment_charges.toFixed(2)
+                            : Number(invoice.payment_charges ?? 0).toFixed(2)}
                         </td>
                       </tr>
                     )}
@@ -300,14 +389,20 @@ export default function InvoiceView() {
               {/* HSN/SAC and Export Note */}
               <div className="text-xs">
                 <div className="flex justify-between border-y-2 border-black px-6 py-2 w-full">
-                  <div>HSN / SAC: {company?.hsn_sac || '998314'}</div>
-                  <div className="text-right">SUPPLY/MENT FOR EXPORT UNDER LUT WITHOUT PAYMENT OF INTEGRATED TAX</div>
+                  <div>HSN / SAC: {company?.hsn_sac || "998314"}</div>
+                  <div className="text-right">
+                    SUPPLY/MENT FOR EXPORT UNDER LUT WITHOUT PAYMENT OF
+                    INTEGRATED TAX
+                  </div>
                 </div>
               </div>
 
               {/* Net Balance */}
               <div className="px-6 py-2 text-right font-bold text-sm border-b border-black">
-                Net Balance Due: ${typeof invoice.total === 'number' ? invoice.total.toFixed(2) : Number(invoice.total || 0).toFixed(2)}
+                Net Balance Due: $
+                {typeof invoice.total === "number"
+                  ? invoice.total.toFixed(2)
+                  : Number(invoice.total || 0).toFixed(2)}
               </div>
 
               {/* Thank You Note */}
@@ -317,48 +412,51 @@ export default function InvoiceView() {
 
               {/* KA and Department */}
               <div className="px-6 py-1 text-xs border-b-2 border-black">
-                KA: {company?.admin_name || 'Matt'}<br />
-                {company?.admin_department || 'Billing Department'}, {company?.name || 'Mango IT Solutions'}
+                KA: {company?.admin_name || "Matt"}
+                <br />
+                {company?.admin_department || "Billing Department"},{" "}
+                {company?.name || "Mango IT Solutions"}
               </div>
 
               {/* Bank Details */}
-
 
               <div className=" px-6 py-2">
                 <table className="w-full text-xs">
                   <tbody>
                     <tr>
                       <td colSpan={2}>
-                        Please wire as per bank details below & send SWIFT / bank advisory to {company?.email || 'accounts@mangoitsolutions.com'}
+                        Please wire as per bank details below & send SWIFT /
+                        bank advisory to{" "}
+                        {company?.email || "accounts@mangoitsolutions.com"}
                       </td>
                     </tr>
                     <tr>
                       <td className="font-medium">For credit to:</td>
-                      <td>{company?.name || 'Mango IT Solutions'}</td>
+                      <td>{company?.name || "Mango IT Solutions"}</td>
                     </tr>
                     <tr>
                       <td className="font-medium">Address:</td>
-                      <td>{company?.address || '15/3, Old Palasia'}</td>
+                      <td>{company?.address || "15/3, Old Palasia"}</td>
                     </tr>
                     <tr>
                       <td className="font-medium">Account number:</td>
-                      <td>{bank?.account_number || 'XXXXXXXXXXXXXX'}</td>
+                      <td>{bank?.account_number || "XXXXXXXXXXXXXX"}</td>
                     </tr>
                     <tr>
                       <td className="font-medium">Account with:</td>
-                      <td>{bank?.bank_name || 'XXXX Bank'}, India</td>
+                      <td>{bank?.bank_name || "XXXX Bank"}, India</td>
                     </tr>
                     <tr>
                       <td className="font-medium">Bank/Branch address:</td>
-                      <td>{bank?.bank_address || 'Bank Address'}</td>
+                      <td>{bank?.bank_address || "Bank Address"}</td>
                     </tr>
                     <tr>
                       <td className="font-medium">SWIFT:</td>
-                      <td>{bank?.swift_code || 'SWIFT Code'}</td>
+                      <td>{bank?.swift_code || "SWIFT Code"}</td>
                     </tr>
                     <tr>
                       <td className="font-medium">IFSC Code:</td>
-                      <td>{bank?.ifsc_code || 'IFSC Code'}</td>
+                      <td>{bank?.ifsc_code || "IFSC Code"}</td>
                     </tr>
                     <tr>
                       <td className="font-medium">Bank Wire Charges:</td>
@@ -370,7 +468,8 @@ export default function InvoiceView() {
 
               {/* Footer Note */}
               <div className="px-6 py-2 text-xs text-center border-t border-b border-black">
-              Late payments charges, if paid later than 7days per terms, @ 1.5% monthly interest or USD 35, whichever is greater.
+                Late payments charges, if paid later than 7days per terms, @
+                1.5% monthly interest or USD 35, whichever is greater.
               </div>
             </div>
           </CardContent>
@@ -385,29 +484,50 @@ export default function InvoiceView() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="email-to">To</label>
+              <label
+                className="block text-sm font-medium mb-1"
+                htmlFor="email-to"
+              >
+                To
+              </label>
               <Input
                 id="email-to"
                 value={emailForm.to}
-                onChange={e => setEmailForm(f => ({ ...f, to: e.target.value }))}
+                onChange={(e) =>
+                  setEmailForm((f) => ({ ...f, to: e.target.value }))
+                }
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="email-subject">Subject</label>
+              <label
+                className="block text-sm font-medium mb-1"
+                htmlFor="email-subject"
+              >
+                Subject
+              </label>
               <Input
                 id="email-subject"
                 value={emailForm.subject}
-                onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))}
+                onChange={(e) =>
+                  setEmailForm((f) => ({ ...f, subject: e.target.value }))
+                }
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="email-message">Message</label>
+              <label
+                className="block text-sm font-medium mb-1"
+                htmlFor="email-message"
+              >
+                Message
+              </label>
               <textarea
                 id="email-message"
                 className="w-full border rounded p-2"
                 rows={4}
                 value={emailForm.message}
-                onChange={e => setEmailForm(f => ({ ...f, message: e.target.value }))}
+                onChange={(e) =>
+                  setEmailForm((f) => ({ ...f, message: e.target.value }))
+                }
               />
             </div>
             <div className="flex justify-end">
@@ -420,22 +540,36 @@ export default function InvoiceView() {
   );
 }
 
-function formatPeriod(period: string) {
-  // Expecting format: 'YYYY-MM-DD - YYYY-MM-DD' or 'MM/DD/YYYY - MM/DD/YYYY' or similar  
+const formatPeriod = (period: string) => {
   const [from, to] = period.split(/\s*-\s*/);
   if (!from || !to) return period;
-  const fromDate = new Date(from);
-  const toDate = new Date(to);
-  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) return period;
-  return `${ordinalDay(fromDate.getDate())} ${fromDate.toLocaleString('en-US', { month: 'short' })} ${fromDate.getFullYear().toString().slice(-2)} to ${ordinalDay(toDate.getDate())} ${toDate.toLocaleString('en-US', { month: 'short' })} ${toDate.getFullYear().toString().slice(-2)}`;
-}
 
-function ordinalDay(day: number) {
-  if (day > 3 && day < 21) return day + 'th';
-  switch (day % 10) {
-    case 1: return day + 'st';
-    case 2: return day + 'nd';
-    case 3: return day + 'rd';
-    default: return day + 'th';
-  }
-}
+  const parseDate = (str: string) => {
+    const [day, month, year] = str.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  };
+
+  const fromDate = parseDate(from);
+  const toDate = parseDate(to);
+
+  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) return period;
+
+  const format = (date: Date) =>
+    `${ordinalDay(date.getDate())} ${date.toLocaleString("en-US", {
+      month: "short",
+    })} ${date.getFullYear().toString().slice(-2)}`;
+
+  return `${format(fromDate)} to ${format(toDate)}`;
+};
+
+const ordinalDay = (day: number) => {
+  const suffix =
+    day % 10 === 1 && day !== 11
+      ? "st"
+      : day % 10 === 2 && day !== 12
+      ? "nd"
+      : day % 10 === 3 && day !== 13
+      ? "rd"
+      : "th";
+  return `${day}${suffix}`;
+};

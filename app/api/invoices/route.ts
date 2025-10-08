@@ -14,7 +14,7 @@ import type { Invoice as InvoiceInstance } from "@/database/models/invoice.model
 import type { InvoiceItem as InvoiceItemInstance } from "@/database/models/invoice-item.model";
 import type { Company } from "@/database/models/company.model";
 import type { BankDetails } from "@/database/models/bank-details.model";
-import { parseInvoiceDate } from "@/lib/utilsServer";
+import { parseInvoiceDate } from "@/lib/utils";
 
 interface InvoiceWithItems {
   invoice: InvoiceInstance;

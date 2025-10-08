@@ -5,9 +5,9 @@ import {
   getBankDetails,
 } from "@/services/invoice.service";
 import { initDB } from "@/database/db";
-import { Invoice } from "@/database/models/invoice.model"; // ✅ Use Sequelize model
+import { Invoice } from "@/database/models/invoice.model"; 
 
-// ✅ GET /api/invoice/[id]
+//  GET /api/invoice/[id]
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: number }> }
@@ -38,7 +38,7 @@ export async function GET(
   }
 }
 
-// ✅ DELETE /api/invoice/[id]
+// DELETE /api/invoice/[id]
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: number }> }

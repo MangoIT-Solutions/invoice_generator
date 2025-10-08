@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
-import { parseEmailsFromGmail } from "@/lib/utilsServer";
-import { sendInvoiceToApi } from "@/lib/utilsServer";
-import { sendInvoiceByGmail } from "@/lib/utilsServer";
-import { updateInvoiceFromPayload } from "@/lib/utilsServer";
-import { generateInvoicePdf } from "@/lib/invoicePdf";
+import { readInvoiceEmails, sendInvoiceEmail } from "@/lib/server/gmail/gmail.service";
+import { updateInvoiceFromPayload } from "@/services/invoice.service";
+import { generateInvoicePdf, getInvoicePdfPaths } from "@/lib/invoicePdf";
 import { getCompanyConfig } from "@/services/company.service";
 import { getBankDetails } from "@/services/bank.service";
-import path from "path";
 import { Invoice } from "@/database/models/invoice.model";
 import { InvoiceItem } from "@/database/models/invoice-item.model";
-
+import { getInvoiceEmailContent, markEmailAsRead } from "@/lib/server/email";
+import { sendInvoiceToApi } from "@/lib/client/api.utils";
 export async function GET() {
   try {
-    const { gmail, parsedInvoices } = await parseEmailsFromGmail();
-
+    const { gmail, parsedInvoices } = await readInvoiceEmails();
     const results = [];
 
     for (const invoice of parsedInvoices) {
@@ -21,12 +18,15 @@ export async function GET() {
       let invoiceNumber: string | undefined;
 
       if (invoice.type === "update") {
-        // ✅ Update invoice
+        //  Update invoice
         const updateResult = await updateInvoiceFromPayload(invoice.payload);
-        invoiceId = updateResult.invoice_id;
-        invoiceNumber = invoice.payload.invoice_number;
 
-        // ✅ Fetch updated invoice and items using Sequelize (as model instances)
+        invoiceId = updateResult.invoice_id;
+        invoiceNumber = updateResult.invoice_number;
+        if (!invoiceId || !invoiceNumber) {
+          throw new Error("Invoice ID or number missing after update");
+        }
+        // Fetch updated invoice and items using Sequelize (as model instances)
         const updatedInvoice = await Invoice.findByPk(invoiceId, {
           include: [{ model: InvoiceItem, as: "items" }],
         });
@@ -37,19 +37,19 @@ export async function GET() {
         
         const invoiceData = updatedInvoice.get({ plain: true });
 
-        // ✅ Fetch company and bank info (update if table name differs)
+        //  Fetch company and bank info (update if table name differs)
         const company = await getCompanyConfig();
         const bank:any = await getBankDetails();
 
-        // ✅ Generate PDF
+        // Generate PDF
         await generateInvoicePdf(
-          invoiceData as any, // InvoiceWithItems type
+          invoiceData as any,
           company,
           bank,
           `invoice-${invoiceNumber}.pdf`
         );
       } else {
-        // ✅ Create invoice
+        // Create invoice
         const res = await sendInvoiceToApi(invoice.payload);
         invoiceId = res?.data?.invoiceId || res?.data?.id;
         invoiceNumber = res?.data?.invoiceNumber;
@@ -59,21 +59,20 @@ export async function GET() {
         throw new Error("Invoice ID or number missing after create/update");
       }
 
-      // ✅ PDF path
-      const pdfPath = path.join(
-        process.cwd(),
-        "public",
-        "invoices",
-        `invoice-${invoiceNumber}.pdf`
+      // PDF path
+      const { filePath: pdfPath } = getInvoicePdfPaths(
+        Number(invoiceNumber)
       );
+      const { subject, message: textBody } = getInvoiceEmailContent("normal", {
+        invoice_number: Number(invoiceNumber),
+        client_name: invoice.payload.client_name,
+        client_email: invoice.payload.client_email,
+        total: invoice.payload.total,
+        total_amount: invoice.payload.total_amount,
+      });
 
-      const subject = `📄 Your Invoice #${invoiceNumber} from Mango IT Solutions`;
-      const textBody = `Invoice #${invoiceNumber} attached.\nTotal: ₹${
-        invoice.payload.total || invoice.payload.total_amount || "N/A"
-      }`;
-
-      // ✅ Send email with PDF
-      await sendInvoiceByGmail(
+      //  Send email with PDF
+      await sendInvoiceEmail(
         invoice.payload.senderEmail,
         subject,
         textBody,
@@ -88,14 +87,8 @@ export async function GET() {
         type: invoice.type,
       });
 
-      // ✅ Mark email as read
-      await gmail.users.messages.modify({
-        userId: "me",
-        id: invoice.id,
-        requestBody: {
-          removeLabelIds: ["UNREAD"],
-        },
-      });
+      //  Mark email as read
+      await markEmailAsRead(gmail, invoice.id);
     }
 
     return NextResponse.json({ success: true, invoices: results });
