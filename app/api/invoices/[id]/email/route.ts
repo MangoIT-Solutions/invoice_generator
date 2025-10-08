@@ -8,7 +8,7 @@ import { readFileSync, existsSync } from 'fs';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'http://localhost:3000',
+  'Access-Control-Allow-Origin': `${process.env.NEXT_PUBLIC_BASE_URL}`,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Credentials': 'true',
