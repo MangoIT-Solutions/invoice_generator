@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
@@ -31,7 +30,7 @@ export default function GoogleAuthenticationPage() {
     >
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <Authorization  />
+          <Authorization />
         </div>
       </div>
     </AdminLayout>

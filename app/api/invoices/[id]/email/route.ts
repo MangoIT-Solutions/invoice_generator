@@ -12,7 +12,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Credentials': 'true',
-};
+}; 
 
 // Handle preflight requests for CORS
 export async function OPTIONS(request: NextRequest) {

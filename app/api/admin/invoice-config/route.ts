@@ -7,8 +7,18 @@ export async function GET() {
   try {
     await initDB();
 
-    const config = await Config.findOne();
-    return NextResponse.json({ config });
+    const configs = await Config.findAll();
+
+    // Convert array of key-value rows into object
+    const configObject = configs.reduce(
+      (acc: Record<string, string>, item: any) => {
+        acc[item.keyIndex] = item.value;
+        return acc;
+      },
+      {}
+    );
+
+    return NextResponse.json({ config: configObject });
   } catch (error) {
     console.error("Error fetching invoice config:", error);
     return NextResponse.json(
@@ -22,35 +32,38 @@ export async function POST(request: NextRequest) {
   try {
     await initDB();
 
-    // ✅ Step 1: Parse and validate request body
+    // Step 1: Parse and validate request body
     const body = await request.json();
 
     const starting_number = Number(body.starting_number) || 1000;
     const current_number = Number(body.current_number) || 1000;
     const invoiceRequestEmailAllowed = body.invoiceRequestEmailAllowed || "";
     const upaidInvoiceReminderDays = Number(body.upaidInvoiceReminderDays) || 0;
-    const marginAmountForUnduePayment = body.marginAmountForUnduePayment || "";
+    const marginAmountRaw = body.marginAmountForUnduePayment;
 
-    const isDecimal = /^-?\d+\.\d+$/.test(marginAmountForUnduePayment);
-    if (!isDecimal) {
+    const marginAmountNumber = Number(marginAmountRaw);
+
+    if (isNaN(marginAmountNumber)) {
       return NextResponse.json(
-        { error: "Margin Amount must be a valid decimal number" },
+        { error: "Margin Amount must be a valid number or decimal" },
         { status: 400 }
       );
     }
 
-    // ✅ Step 3: Reusable upsert function for config table
-    const upsertConfig = async (key: string, value: string) => {
-      const existing = await Config.findOne({ where: { key } });
+    const marginAmountForUnduePayment = marginAmountNumber.toFixed(2);
+
+    // Step 3: Reusable upsert function for config table
+    const upsertConfig = async (keyIndex: string, value: string) => {
+      const existing = await Config.findOne({ where: { keyIndex } });
 
       if (existing) {
         await existing.update({ value });
       } else {
-        await Config.create({ key, value });
+        await Config.create({ keyIndex, value });
       }
     };
 
-    // ✅ Step 2: Upsert invoice_config (single row only)
+    // Step 2: Upsert invoice_config (single row only)
     const existingInvoiceConfig = await Config.findOne();
     if (existingInvoiceConfig) {
       await upsertConfig("starting_number", String(starting_number));
@@ -71,7 +84,7 @@ export async function POST(request: NextRequest) {
       await Config.create({ starting_number, current_number });
     }
 
-    // ✅ Step 4: Store configs
+    // Step 4: Store configs
     await upsertConfig(
       "invoiceRequestEmailAllowed",
       invoiceRequestEmailAllowed
@@ -85,7 +98,6 @@ export async function POST(request: NextRequest) {
       marginAmountForUnduePayment
     );
 
-    // ✅ Done
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error updating invoice config:", error);

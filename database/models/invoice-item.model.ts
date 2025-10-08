@@ -19,6 +19,7 @@ export class InvoiceItem extends Model<
   declare base_rate: number;
   declare unit: number;
   declare amount: number;
+  declare items?: InvoiceItem[]; // Optional association with Invoice
 }
 
 export const associateInvoiceItem = (models: { Invoice: typeof Invoice }) => {

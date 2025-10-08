@@ -41,8 +41,14 @@ export class Invoice extends Model<
   declare subtotal: number;
   declare payment_charges: number;
   declare total: number;
-  declare status: "draft" | "sent" | "paid";
+  declare lastUnpaidReminderDate?: Date;
+  declare lastInvoiceSendDate?: Date | null;
+  declare recurring_interval?: null | "once a month" | "twice a month";
+  declare status: "draft" | "sent" | "fully_paid" | "partially_paid";
+  senderEmail?: string;
   declare created_at: CreationOptional<Date>;
+  static lastInvoiceSendDate: Date;
+  declare items?: InvoiceItem[];
 }
 
 Invoice.init(
@@ -98,9 +104,27 @@ Invoice.init(
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
     },
+    lastUnpaidReminderDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    recurring_interval: {
+      type: DataTypes.ENUM("once a month", "twice a month"),
+      allowNull: true,
+      defaultValue: null,
+    },
     status: {
-      type: DataTypes.ENUM("draft", "sent", "paid"),
+      type: DataTypes.ENUM("draft", "sent", "fully_paid", "partially_paid"),
       defaultValue: "draft",
+    },
+    lastInvoiceSendDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    senderEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
     },
     created_at: {
       type: DataTypes.DATE,
@@ -116,3 +140,4 @@ Invoice.init(
 
 Invoice.belongsTo(User, { foreignKey: "user_id", as: "user" });
 Invoice.hasMany(InvoiceItem, { foreignKey: "invoice_id", as: "items" });
+InvoiceItem.belongsTo(Invoice, { foreignKey: "invoice_id" });
