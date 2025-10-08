@@ -70,6 +70,14 @@ export async function getAllowedInvoiceEmails(): Promise<string[]> {
   const config = await Config.findOne({
     where: { key: "invoiceRequestEmailAllowed" },
   });
-  if (!config || !config.value) return [];
-  return config.value.split(",").map((email: string) => email.trim());
+  const value = config?.getDataValue("value");
+
+  if (!value || typeof value !== "string") {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((email) => email.trim())
+    .filter((email) => email.length > 0);
 }

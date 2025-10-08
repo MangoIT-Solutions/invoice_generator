@@ -11,13 +11,13 @@ export async function sendUnpaidInvoiceReminders() {
     });
 
     // If config not found, skip
-    if (!configData || !configData.value) {
+    if (!configData?.getDataValue("value")) {
       console.warn(" Reminder config not found. Skipping cron.");
       return;
     }
 
     // Parse reminder gap to number
-    const remindAfterDays = Number(configData.value);
+    const remindAfterDays = Number(configData.getDataValue("value"));
 
     // Fetch all invoices that are sent or partially paid
     const invoices = await Invoice.findAll({

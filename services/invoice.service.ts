@@ -26,7 +26,6 @@ export async function createInvoice(
       ...item,
       invoice_id: invoiceId,
     }));
-    console.log("Creating invoice items:", itemsWithInvoiceId);
     await InvoiceItem.bulkCreate(itemsWithInvoiceId, { transaction });
 
     await transaction.commit();
@@ -144,10 +143,11 @@ export async function updateInvoiceFromPayload(payload: any) {
   const {
     invoice_number,
     client_name,
+    client_company_name,
     client_address,
     client_email,
     invoice_date,
-    Date_range,
+    period,
     term,
     status,
     recurring_interval,
@@ -171,17 +171,18 @@ export async function updateInvoiceFromPayload(payload: any) {
   // Step 2: Update invoice fields
   const updateData: any = {};
   if (client_name) updateData.client_name = client_name;
+  if (client_company_name) updateData.client_company_name = client_company_name;
   if (client_address) updateData.client_address = client_address;
   if (client_email) updateData.client_email = client_email;
   if (invoice_date) updateData.invoice_date = invoice_date;
-  if (Date_range) updateData.period = Date_range;
+  if (period) updateData.period = period;
   if (term) updateData.term = term;
   if (project_code) updateData.project_code = project_code;
   if (typeof payment_charges !== "undefined")
     updateData.payment_charges = payment_charges;
   if (typeof status !== "undefined") updateData.status = status;
-  if (payload.recurring_interval)
-    updateData.recurring_interval = payload.recurring_interval;
+  if (recurring_interval)
+    updateData.recurring_interval = recurring_interval;
 
   if (Object.keys(updateData).length) {
     await Invoice.update(updateData, { where: { invoice_number } });

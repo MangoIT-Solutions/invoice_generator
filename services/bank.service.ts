@@ -66,7 +66,7 @@ export async function processBankMail() {
       throw new Error("Config for marginAmountForUnduePayment not found");
     }
 
-    const allowedMargin = Number(marginConfig.value);
+    const allowedMargin = Number(marginConfig.get("value"));
 
     for (const emailData of parsedBankMails) {
       if (emailData.type !== "bank_mail") continue;

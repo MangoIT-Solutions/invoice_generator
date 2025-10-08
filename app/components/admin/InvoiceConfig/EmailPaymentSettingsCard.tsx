@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Settings } from "lucide-react";
 
-export default function EmailPaymentSettingsCard({ formData, handleChange }) {
+export default function EmailPaymentSettingsCard({ formData, handleChange }: Readonly<{ formData: any; handleChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => void; }>) {
   return (
     <Card>
       <CardHeader>

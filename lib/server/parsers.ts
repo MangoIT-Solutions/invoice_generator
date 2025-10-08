@@ -1,4 +1,6 @@
+import { parseInvoiceUpdateEmail } from "../invoiceUpdateParser";
 import { extractSenderAndBody } from "../server/email";
+import { parseInvoiceDate } from "../utils";
 
 // Parses key-value lines from the email body into an object
 export function parseKeyValueLines(lines: string[]): Record<string, string> {
@@ -23,7 +25,6 @@ export async function parseEmailContentForCreating(
   userId: number
 ) {
   const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
-  console.log("Senders Email:", senderEmail);
 
   if (!bodyText || !senderEmail)
     throw new Error("No email body or sender email");
@@ -43,7 +44,7 @@ export async function parseEmailContentForCreating(
     client_address: keyMap.client_address || "",
     project_code: keyMap.project_code || "",
     invoice_date: keyMap.invoice_date || new Date().toISOString().split("T")[0],
-    Date_range: keyMap.date_range || "",
+    period: keyMap.date_range || "",
     term: keyMap.term || "",
     recurring_interval: (() => {
       const recurringRaw = keyMap.recurring_term?.toLowerCase();
@@ -257,4 +258,125 @@ export async function parseBankMailEmail(
   }
 
   return payload;
+}
+
+export function prepareInvoiceUpdatePayload(
+  aiResponse: {
+    invoiceNumber: number;
+    updates: Array<{
+      action: string;
+      field?: string;
+      value?: string | number;
+      baseRate?: number;
+      unit?: number;
+      amount?: number;
+      description?: string;
+    }>;
+  },
+  userId: number,
+  senderEmail: string
+) {
+  const payload: any = {
+    invoice_number: aiResponse.invoiceNumber,
+    user_id: userId,
+    senderEmail,
+    items: { add: [], remove: [], replace: [] },
+  };
+
+  let subtotal = 0;
+
+  const computeAmount = (baseRate?: number, unit?: number, amount?: number) =>
+    amount ?? (baseRate && unit ? baseRate * unit : undefined);
+
+  for (const update of aiResponse.updates) {
+    const action = update.action?.toLowerCase();
+    const field = update.field?.toLowerCase();
+
+    switch (action) {
+      // ----------- FIELD UPDATES -----------
+      case "update":
+        if (!field || update.value === undefined) break;
+
+        const stringValue = String(update.value).trim();
+
+        const fieldMap: Record<string, (val: string) => void> = {
+          clientname: (v) => (payload.client_name = v),
+          clientcompanyname: (v) => (payload.client_company_name = v),
+          clientemail: (v) => (payload.client_email = v),
+          clientaddress: (v) => (payload.client_address = v),
+          invoicedate: (v) => (payload.invoice_date = parseInvoiceDate(v)),
+          daterange: (v) => (payload.period = v),
+          term: (v) => (payload.term = v),
+          projectcode: (v) => (payload.project_code = v),
+          transfercharges: (v) =>
+            (payload.payment_charges = [
+              "yes",
+              "true",
+              "1",
+              "include",
+              "included",
+            ].includes(v.toLowerCase())
+              ? 35
+              : 0),
+          status: (v) => (payload.status = v.toLowerCase()),
+        };
+
+        if (fieldMap[field]) fieldMap[field](stringValue);
+        break;
+
+      // ----------- REMOVE ITEM -----------
+      case "removeitem":
+        if (update.description || update.value) {
+          payload.items.remove.push(String(update.description ?? update.value));
+        }
+        break;
+
+      // ----------- ADD / UPDATE ITEM -----------
+      case "additem":
+      case "updateitem": {
+        if (!update.description && !update.value) break;
+        const item = {
+          description: update.description ?? String(update.value),
+          base_rate: update.baseRate,
+          unit: update.unit,
+          amount: computeAmount(update.baseRate, update.unit, update.amount),
+        };
+        payload.items[action === "additem" ? "add" : "replace"].push(item);
+        if (item.amount) subtotal += item.amount;
+        break;
+      }
+
+      default:
+        console.warn(`Unknown action: ${update.action}`);
+    }
+  }
+
+  if (subtotal > 0) payload.subtotal = subtotal;
+
+  payload.total = (payload.subtotal || 0) + (payload.payment_charges || 0);
+
+  return payload;
+}
+
+export async function extractInvoiceUpdateFromEmail(
+  rawBase64Data: string,
+  userId: number
+) {
+  const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
+
+  if (!bodyText || !senderEmail) {
+    throw new Error("No body text or Email found in email");
+  }
+
+  // Get structured update info from AI (Gemini)
+  const structured = await parseInvoiceUpdateEmail(bodyText);
+
+  // Convert AI structured response into your final invoice payload
+  const result = await prepareInvoiceUpdatePayload(
+    structured,
+    userId,
+    senderEmail
+  );
+
+  return result;
 }

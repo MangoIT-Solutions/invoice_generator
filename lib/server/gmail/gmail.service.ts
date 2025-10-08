@@ -1,9 +1,7 @@
 import { getAutomateUser, getRefreshToken } from "@/services/google.service";
 import { google } from "googleapis";
 import { simpleParser } from "mailparser";
-import { parseEmailContentForUpdating } from "@/lib/server/parsers";
-import { parseEmailContentForCreating } from "@/lib/server/parsers";
-import { parseBankMailEmail } from "@/lib/server/parsers";
+import { extractInvoiceUpdateFromEmail, parseBankMailEmail, parseEmailContentForCreating } from "@/lib/server/parsers";
 import { markEmailAsRead, getAllowedInvoiceEmails } from "@/lib/server/email";
 import { createMimeMessage } from "mimetext";
 import path from "path";
@@ -29,7 +27,7 @@ export async function getGmailClient() {
 
 // Reads unread Gmail emails with a specific label and subject.
 export async function readInvoiceEmails() {
-  const { gmail, accessToken } = await getGmailClient();
+  const { gmail } = await getGmailClient();
 
   const label = process.env.GMAIL_QUERY_LABEL || "invoices";
   const subjectCreate = process.env.GMAIL_QUERY_SUBJECT || "Invoice Request";
@@ -85,7 +83,7 @@ export async function readInvoiceEmails() {
       const subject = parsedEmail.subject || "";
 
       if (subject.includes("Invoice Update")) {
-        const invoicePayload = await parseEmailContentForUpdating(
+        const invoicePayload = await extractInvoiceUpdateFromEmail(
           rawMsg.data.raw!,
           userId
         );
@@ -112,7 +110,7 @@ export async function readInvoiceEmails() {
       );
     }
   }
-  return { gmail, parsedInvoices, accessToken };
+  return { gmail, parsedInvoices };
 }
 
 // Reads unread gmail for bank mails
