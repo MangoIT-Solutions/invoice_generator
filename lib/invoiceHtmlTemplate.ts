@@ -1,10 +1,9 @@
-import fs from "fs";
-import path from "path";
 import { formatDateToMDY, formatPeriod } from "./utils";
 import type { Invoice } from "@/database/models/invoice.model";
 import type { InvoiceItem } from "@/database/models/invoice-item.model";
 import type { Company } from "@/database/models/company.model";
 import type { BankDetails } from "@/database/models/bank-details.model";
+import { getImageApiUrl } from "./config";
 
 /**
  * Generate invoice HTML markup using Sequelize model instances.
@@ -15,26 +14,6 @@ export function generateInvoiceHtml(
   company: Partial<Company>,
   bank: Partial<BankDetails>
 ): string {
-  const companyData = company;
-  const logoFileName = companyData.company_logo || "default_logo.png";
-  const logoFilePath = path.join(
-    process.cwd(),
-    "public",
-    "uploads",
-    path.basename(logoFileName)
-  );
-  let logoDataUrl = "";
-
-  if (fs.existsSync(logoFilePath)) {
-    const imageBuffer = fs.readFileSync(logoFilePath);
-    const imageType = path.extname(logoFileName).substring(1) || "png";
-    logoDataUrl = `data:image/${imageType};base64,${imageBuffer.toString(
-      "base64"
-    )}`;
-  } else {
-    console.error(`Logo file not found at: ${logoFilePath}`);
-  }
-
   const invoiceDateStr = invoice.invoice_date;
   let invoiceDate = new Date();
   if (invoiceDateStr && /^\d{4}-\d{2}-\d{2}$/.test(invoiceDateStr)) {
@@ -42,7 +21,7 @@ export function generateInvoiceHtml(
     invoiceDate = new Date(Date.UTC(year, month - 1, day));
   }
 
-  // ⬇️ Return full HTML using `invoiceData`, `itemData`, `companyData`, and `bankData`
+  // ⬇️ Return full HTML using `invoiceData`, `itemData`, and `bankData`
   return `<!DOCTYPE html>
   <html>
   <head>
@@ -83,7 +62,7 @@ export function generateInvoiceHtml(
     <table class="main-table">
       <tr class="header-row">
         <td class="logo-cell" style="border-right: none;">
-          <img src="${logoDataUrl}" alt="Company Logo" style="max-width:180px;max-height:80px;object-fit:contain;background:#fff;border-radius:4px;border:1px solid #eee;padding:4px;" />
+          <img src="${company.company_logo ? getImageApiUrl(company.company_logo) : ''}" alt="Company Logo" style="max-width:180px;max-height:80px;object-fit:contain;background:#fff;border-radius:4px;border:1px solid #eee;padding:4px;" />
         </td>
         <td class="company-cell" colspan="2">
           <div style="font-size: 1.25em; font-weight: bold;">${

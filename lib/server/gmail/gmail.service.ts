@@ -117,8 +117,8 @@ export async function readInvoiceEmails() {
 export async function readBankEmails() {
   const { gmail } = await getGmailClient();
 
-  const label = process.env.BANK_QUERY_LABEL || "bankMail";
-  const subjectBankMail = process.env.GMAIL_BANKMAIL_SUBJECT || "Bank Mail";
+  const label = process.env.GMAIL_BANK_QUERY_LABEL || "bank-mails";
+  const subjectBankMail = process.env.GMAIL_BANK_MAIL_SUBJECT || "Bank Mail";
   const userId = await getAutomateUser();
   const parsedBankMails = [];
 

@@ -10,7 +10,7 @@ export default{
       contact: '+91-731-4044117/4046693',
       admin_name: 'MangoIT Accounts',
       admin_department: 'Billing Department, Mango It Solutions',
-      company_logo: 'uploads/1752211356560-1749807171811_logo_3.png',
+      company_logo: 'uploads/images/1749807171811_logo_3.png',
       hsn_sac: '998314',
     }], {});
   },

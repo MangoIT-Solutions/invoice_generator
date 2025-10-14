@@ -12,7 +12,7 @@ export async function GET(
   try {
     await initDB();
     const { id } = await params;
-    const pdfDir = path.join(process.cwd(), 'public', 'invoices');
+    const pdfDir = path.join(process.cwd(), 'uploads', 'invoices');
     const pdfPath = path.join(pdfDir, `invoice-${id}.pdf`);
 
     // Check if PDF already exists, if not generate it

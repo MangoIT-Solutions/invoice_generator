@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { getImageApiUrl } from "@/lib/config";
 
 interface InvoiceData {
   invoice: any;
@@ -165,15 +166,7 @@ export default function InvoiceView() {
                   <div className="w-48">
                     {company?.company_logo && (
                       <img
-                        src={
-                          company.company_logo.startsWith("uploads/") ||
-                          company.company_logo.startsWith("/uploads/")
-                            ? `/` + company.company_logo.replace(/^\/+/, "")
-                            : `/uploads/${company.company_logo.replace(
-                                /^\/+/,
-                                ""
-                              )}`
-                        }
+                        src={getImageApiUrl(company.company_logo)}
                         alt="Company Logo"
                         className="h-16 object-contain bg-white border border-gray-200 mt-1 ml-[-20px]"
                       />
