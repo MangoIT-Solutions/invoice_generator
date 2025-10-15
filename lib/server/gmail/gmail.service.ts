@@ -1,7 +1,7 @@
 import { getAutomateUser, getRefreshToken } from "@/services/google.service";
 import { google } from "googleapis";
 import { simpleParser } from "mailparser";
-import { extractInvoiceUpdateFromEmail, parseBankMailEmail, parseEmailContentForCreating } from "@/lib/server/parsers";
+import { extractInvoiceUpdateFromEmail, extractInvoiceCreateFromEmail, parseBankMailEmail } from "@/lib/server/parsers";
 import { markEmailAsRead, getAllowedInvoiceEmails } from "@/lib/server/email";
 import { createMimeMessage } from "mimetext";
 import path from "path";
@@ -93,7 +93,7 @@ export async function readInvoiceEmails() {
           type: "update",
         });
       } else {
-        const invoicePayload = await parseEmailContentForCreating(
+        const invoicePayload = await extractInvoiceCreateFromEmail(
           rawMsg.data.raw!,
           userId
         );
