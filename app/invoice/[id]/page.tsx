@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { getImageApiUrl } from "@/lib/config";
 
 interface InvoiceData {
   invoice: any;
@@ -165,15 +166,7 @@ export default function InvoiceView() {
                   <div className="w-48">
                     {company?.company_logo && (
                       <img
-                        src={
-                          company.company_logo.startsWith("uploads/") ||
-                          company.company_logo.startsWith("/uploads/")
-                            ? `/` + company.company_logo.replace(/^\/+/, "")
-                            : `/uploads/${company.company_logo.replace(
-                                /^\/+/,
-                                ""
-                              )}`
-                        }
+                        src={getImageApiUrl(company.company_logo)}
                         alt="Company Logo"
                         className="h-16 object-contain bg-white border border-gray-200 mt-1 ml-[-20px]"
                       />
@@ -261,27 +254,41 @@ export default function InvoiceView() {
                         <td className="py-0.5">
                           {invoice.period
                             ? (() => {
-                                const [start, end]: [string, string] =
-                                  invoice.period.split("-");
-                                const formatDate = (
-                                  dateStr: string
-                                ): string => {
-                                  const [day, month, year] = dateStr.split("/");
-                                  const dateObj = new Date(
-                                    `${year}-${month}-${day}`
-                                  );
-                                  return dateObj
-                                    .toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "2-digit",
-                                    })
-                                    .replace(/ /g, "-");
-                                };
+                                const period = invoice.period.trim();
 
-                                return `${formatDate(start)} to ${formatDate(
-                                  end
-                                )}`;
+                                // Match pattern like "01/10/2025 - 30/10/2025"
+                                const dateRangeRegex =
+                                  /^\d{2}\/\d{2}\/\d{4}\s*-\s*\d{2}\/\d{2}\/\d{4}$/;
+
+                                if (dateRangeRegex.test(period)) {
+                                  const [start, end] = period
+                                    .split("-")
+                                    .map((s: string) => s.trim());
+
+                                  const formatDate = (
+                                    dateStr: string
+                                  ): string => {
+                                    const [day, month, year] =
+                                      dateStr.split("/");
+                                    const dateObj = new Date(
+                                      `${year}-${month}-${day}`
+                                    );
+                                    return dateObj
+                                      .toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "2-digit",
+                                      })
+                                      .replace(/ /g, "-");
+                                  };
+
+                                  return `${formatDate(start)} to ${formatDate(
+                                    end
+                                  )}`;
+                                } else {
+                                  // Leave other formats untouched
+                                  return period;
+                                }
                               })()
                             : "N/A"}
                         </td>

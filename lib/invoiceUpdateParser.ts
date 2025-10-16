@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { getGeminiModel, extractText } from "./server/invoice/ai/llm";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
-import type { MessageContent } from "@langchain/core/messages";
 
 const updateSchema = z.object({
   invoiceNumber: z.number(),
@@ -18,28 +17,9 @@ const updateSchema = z.object({
   ),
 });
 
-function extractText(content: MessageContent): string {
-  if (typeof content === "string") {
-    return content;
-  }
-
-  return content
-    .filter(
-      (part: any) => part.type === "text" && typeof part.text === "string"
-    )
-    .map((part: any) => part.text)
-    .join("\n");
-}
-
 export async function parseInvoiceUpdateEmail(emailContent: string) {
-  // Initialize Gemini through LangChain
-  const model = new ChatGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY!,
-    model: "gemini-2.5-flash", // or "gemini-1.5-flash" for faster/cheaper
-    temperature: 0,
-  });
+  const model = getGeminiModel();
 
-  // Create a parser from Zod schema
   const parser = StructuredOutputParser.fromZodSchema(updateSchema);
 
   const prompt = `

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const bank:any = await getBankDetails();
 
     const pdfFileName = `invoice-${id}.pdf`;
-    const pdfPath = path.join(process.cwd(), 'public', 'invoices', pdfFileName);
+    const pdfPath = path.join(process.cwd(), 'uploads', 'invoices', pdfFileName);
     let pdfBuffer: Buffer | null = null;
 
     if (existsSync(pdfPath)) {

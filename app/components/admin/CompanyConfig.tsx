@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import router from 'next/router';
+import { getImageApiUrl } from '@/lib/config';
 
 export default function CompanyConfig() {
   const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +78,7 @@ export default function CompanyConfig() {
       const data = await response.json();
       if (response.ok) {
         toast.success('Company configuration saved successfully');
+        fetchCompanyConfig();
       } else {
         toast.error(data.error || 'Failed to save configuration');
       }
@@ -217,7 +218,7 @@ export default function CompanyConfig() {
                 onChange={handleLogoChange}
               />
               {formData.company_logo && typeof formData.company_logo === 'string' && (
-                <img src={formData.company_logo} alt="Company Logo" className="mt-2 h-16" />
+                <img src={getImageApiUrl(formData.company_logo)} alt="Company Logo" className="mt-2 h-16" />
               )}
             </div>
 

@@ -28,7 +28,7 @@ export async function generateInvoicePdf(
   bank: BankDetailsInstance,
   pdfFileName: string
 ): Promise<string> {
-  const pdfDir = path.join(process.cwd(), "public", "invoices");
+  const pdfDir = path.join(process.cwd(), "uploads", "invoices");
   const pdfPath = path.join(pdfDir, pdfFileName);
 
   // Ensure invoices directory exists
@@ -93,6 +93,6 @@ export async function generateInvoicePdf(
 
 export function getInvoicePdfPaths(invoiceNumber: number) {
   const fileName = `invoice-${invoiceNumber}.pdf`;
-  const filePath = path.join(process.cwd(), "public", "invoices", fileName);
+  const filePath = path.join(process.cwd(), "uploads", "invoices", fileName);
   return { fileName, filePath };
 }

@@ -40,3 +40,6 @@ next-env.d.ts
 
 public/invoices/*
 public/uploads/*
+
+uploads/invoices/*
+uploads/images/*

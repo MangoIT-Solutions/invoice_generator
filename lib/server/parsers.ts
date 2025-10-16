@@ -1,4 +1,6 @@
 import { parseInvoiceUpdateEmail } from "../invoiceUpdateParser";
+import { parseInvoiceCreateEmail } from "../invoiceCreateParser";
+import { computeAmount, calculatePaymentCharges } from "./invoice/helpers";
 import { extractSenderAndBody } from "../server/email";
 import { parseInvoiceDate } from "../utils";
 
@@ -96,6 +98,89 @@ export async function parseEmailContentForCreating(
   payload.total = payload.subtotal + payload.payment_charges;
 
   return payload;
+}
+
+export function prepareInvoiceCreatePayload(
+  aiResponse: {
+    clientName?: string;
+    clientEmail?: string;
+    clientAddress?: string;
+    clientCompanyName?: string;
+    projectCode?: string;
+    invoiceDate?: string;
+    dateRange?: string;
+    includeTransferCharges?: string | boolean;
+    term?: string;
+    recurringInterval?: string | null;
+    items: Array<{
+      description: string;
+      baseRate: number;
+      unit: number;
+      amount?: number;
+    }>;
+  },
+  userId: number,
+  senderEmail: string
+) {
+  // calculate transfer fee via helper
+  const paymentCharges = calculatePaymentCharges(aiResponse.includeTransferCharges);
+
+  const payload: any = {
+    user_id: userId,
+    senderEmail,
+    client_name: aiResponse.clientName ?? "",
+    client_email: aiResponse.clientEmail ?? "",
+    client_company_name: aiResponse.clientCompanyName ?? "",
+    client_address: aiResponse.clientAddress ?? "",
+    project_code: aiResponse.projectCode ?? "",
+    invoice_date: (() => {
+      if (!aiResponse.invoiceDate)
+        return new Date().toISOString().split("T")[0];
+      return parseInvoiceDate(aiResponse.invoiceDate);
+    })(),
+    period: aiResponse.dateRange ?? "",
+    term: aiResponse.term ?? "",
+    recurring_interval: aiResponse.recurringInterval ?? null,
+    payment_charges: paymentCharges,
+    items: [],
+    subtotal: 0,
+    total: 0,
+    status: "sent",
+  };
+
+  let subtotal = 0;
+  for (const i of aiResponse.items) {
+    const amount = computeAmount(i.baseRate, i.unit, i.amount);
+    payload.items.push({
+      description: i.description,
+      base_rate: i.baseRate,
+      unit: i.unit,
+      amount,
+    });
+    subtotal += amount;
+  }
+
+  payload.subtotal = subtotal;
+  payload.total = subtotal + paymentCharges;
+
+  return payload;
+}
+
+export async function extractInvoiceCreateFromEmail(
+  rawBase64Data: string,
+  userId: number
+) {
+  const { senderEmail, bodyText } = await extractSenderAndBody(rawBase64Data);
+
+  if (!bodyText || !senderEmail) {
+    throw new Error("No body text or Email found in email");
+  }
+
+  // Obtain structured info using Gemini
+  const structured = await parseInvoiceCreateEmail(bodyText);
+
+  // Transform into internal payload format
+  return prepareInvoiceCreatePayload(structured, userId, senderEmail);
 }
 
 // Parses the email to extract update actions:
@@ -285,9 +370,6 @@ export function prepareInvoiceUpdatePayload(
 
   let subtotal = 0;
 
-  const computeAmount = (baseRate?: number, unit?: number, amount?: number) =>
-    amount ?? (baseRate && unit ? baseRate * unit : undefined);
-
   for (const update of aiResponse.updates) {
     const action = update.action?.toLowerCase();
     const field = update.field?.toLowerCase();
@@ -309,15 +391,15 @@ export function prepareInvoiceUpdatePayload(
           term: (v) => (payload.term = v),
           projectcode: (v) => (payload.project_code = v),
           transfercharges: (v) =>
-            (payload.payment_charges = [
-              "yes",
-              "true",
-              "1",
-              "include",
-              "included",
-            ].includes(v.toLowerCase())
-              ? 35
-              : 0),
+          (payload.payment_charges = [
+            "yes",
+            "true",
+            "1",
+            "include",
+            "included",
+          ].includes(v.toLowerCase())
+            ? 35
+            : 0),
           status: (v) => (payload.status = v.toLowerCase()),
         };
 

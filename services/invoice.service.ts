@@ -6,8 +6,7 @@ import { User } from "@/database/models/user.model";
 import { Company } from "@/database/models/company.model";
 import { BankDetails } from "@/database/models/bank-details.model";
 import { Sequelize } from "sequelize";
-import { generateInvoicePdf } from "@/lib/invoicePdf";
-import { getInvoicePdfPaths } from "@/lib/invoicePdf";
+import { generateInvoicePdf, getInvoicePdfPaths } from "@/lib/invoicePdf";
 
 export async function createInvoice(
   invoiceData: Omit<Invoice, "id" | "created_at">,
@@ -217,7 +216,7 @@ export async function updateInvoiceFromPayload(payload: any) {
         continue;
       }
 
-      const created = await InvoiceItem.create({
+      await InvoiceItem.create({
         invoice_id: invoiceId,
         description: desc,
         base_rate: item.base_rate,
